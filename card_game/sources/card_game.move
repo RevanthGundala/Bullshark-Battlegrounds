@@ -21,6 +21,7 @@ module card_game::card_game {
         id: UID,
         player_1: Player,
         player_2: Player,
+        // board: Board,
         winner: u64
     }
 
@@ -33,6 +34,11 @@ module card_game::card_game {
         board: vector<Card>,
         life: u64,
     }
+
+    // struct Board has store {
+    //     player_1_board: vector<Card>,
+    //     player_2_board: vector<Card>,
+    // }
 
     struct Card has key, store{
         id: UID,
@@ -55,7 +61,7 @@ module card_game::card_game {
 
     // deck = assets of user up to 8 cards
 
-    public entry fun start_game_with(opponent: address, ctx: &mut TxContext) {
+    public entry fun challenge(opponent: address, ctx: &mut TxContext) {
         //assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
         
         // get the deck from player's owned objects
@@ -98,38 +104,29 @@ module card_game::card_game {
 
     public fun discard(game: &mut Game, index: u64, ctx: &mut TxContext): &vector<Card>{
         let (player, _, _) = get_players(game, ctx);
-        let size = vector::length<Card>(&mut player.hand);
-        assert!(index < size, EINDEX_OUT_OF_BOUNDS);
-        let card_to_delete = vector::borrow_mut<Card>(&mut player.hand, index);
-        let i = 0;
-        // swap values in vector to place card we don't want at end and pop it
-        while(i < size) {
-            if(i == index) {
-                let card_to_swap = vector::borrow_mut<Card>(&mut player.hand, size - 1);
-                let temp = card_to_delete;
-                card_to_delete = card_to_swap;
-                card_to_swap = temp;
-                // make sure swap happens correctly;
-                let obj = vector::pop_back<Card>(&mut player.hand);
-                break
-            }
-            else{
-                i = i + 1;
-            }
-        };
-
-        //  TODO: Add to graveyard
-        //vector::push_back<Card>(&mut player.graveyard, temp);
+        let card = replace_card(game, index, ctx);
+        vector::push_back<Card>(&mut player.graveyard, card);
         &player.hand
     }
 
+    public fun play_card(game: &mut Game, index: u64, ctx: &mut TxContext): &vector<Card> {
+        let (player, _, _) = get_players(game, ctx);
+        let card_to_play = vector::borrow_mut<Card>(&mut player.hand, index);
+        // TODO: zk
+
+        // move card from hand to board
+        let card = replace_card(game, index, ctx);
+        vector::push_back<Card>(&mut player.board, card);
+        &player.board
+    }
+
     public entry fun attack(
-        game: Game, 
+        game: &mut Game, 
     attacking_character_index: u64, 
     defending_character_index: u64, 
     ctx: &mut TxContext) {
         let game_over = false;
-        let (attacking_player, defending_player, order) = get_players(&mut game, ctx);
+        let (attacking_player, defending_player, order) = get_players(game, ctx);
         if(order == true) {
             // choose a card from player_1's board to attack with
             let attacking_character = vector::borrow<Card>(&mut game.player_1.board, attacking_character_index);
@@ -190,12 +187,6 @@ module card_game::card_game {
             object::delete(player_1.id);
             object::delete(player_2.id);
         }
-
-        
-
-        
-
-       
     }
 
     public entry fun end_turn(game: Game, player_turn: address, ctx: &mut TxContext) {
@@ -239,5 +230,27 @@ module card_game::card_game {
         }
     }
 
-    
+    fun replace_card(game: &mut Game, index: u64, ctx: &mut TxContext): Card{
+        let (player, _, _) = get_players(game, ctx);
+        let size = vector::length<Card>(&mut player.hand);
+        assert!(index < size, EINDEX_OUT_OF_BOUNDS);
+        let card_to_delete = vector::borrow_mut<Card>(&mut player.hand, index);
+        let i = 0;
+        let card;
+        // swap values in vector to place card we don't want at end and pop it
+        while(i < size) {
+            if(i == index) {
+                let card_to_swap = vector::borrow_mut<Card>(&mut player.hand, size - 1);
+                let temp = card_to_delete;
+                card_to_delete = card_to_swap;
+                card_to_swap = temp;
+                card = vector::pop_back<Card>(&mut player.hand);
+                break
+            }
+            else{
+                i = i + 1;
+            }
+        };
+        card
+    }
 }
