@@ -21,16 +21,16 @@ module card_game::card_game {
         id: UID,
         player_1: Player,
         player_2: Player,
-        board_state: BoardState,
         winner: u64
     }
 
-    struct Player has store{
+    struct Player has key, store{
         id: UID,
         addr: address,
         deck: vector<Card>,
         hand: vector<Card>,
         graveyard: vector<Card>,
+        board: vector<Card>,
         life: u64,
     }
 
@@ -46,12 +46,6 @@ module card_game::card_game {
     struct Character has store {
         life: u64,
         attack: u64,
-    }
-
-    // TODO: make player_1 board include player
-    struct BoardState has store{
-        player_1_board: vector<Card>,
-        player_2_board: vector<Card>
     }
 
     struct GameOver has copy, drop {
@@ -71,6 +65,7 @@ module card_game::card_game {
             deck: vector<Card>[], // get deck from player's owned objects (Cards) and shuffle
             hand: vector<Card>[],  
             graveyard: vector<Card>[],
+            board: vector<Card>[],
             life: STARTING_HEALTH,
         };
         let player_2 = Player{
@@ -79,6 +74,7 @@ module card_game::card_game {
             deck: vector<Card>[],
             hand: vector<Card>[],
             graveyard: vector<Card>[],
+            board: vector<Card>[],
             life: STARTING_HEALTH,
         };
 
@@ -86,49 +82,17 @@ module card_game::card_game {
             id: object::new(ctx),
             player_1: player_1,
             player_2: player_2,
-            board_state: BoardState{
-                player_1_board: vector<Card>[],
-                player_2_board: vector<Card>[]
-            },
             winner: NO_WINNER,
         };
 
         transfer::transfer(game, tx_context::sender(ctx));
     }
 
-    // public entry fun make_move(game: Game, ctx: &mut TxContext) {
-    //     if(declare_winner(game)) {
-    //         let winner = game.winner;
-    //         let id = object::new(ctx);
-    //         event::emit(
-    //             GameOver{
-    //                 id: object::uid_to_inner(&id), 
-    //                 winner}
-    //             );
-    //         let Game {
-    //             id; id,
-    //             player_1: _,
-    //             player_2: _,
-    //             board_state: _,
-    //             winner:  _,
-    //         } = game;
-    //         object::delete(id);
-    //     }
-        
-
-    //     1. make player play card -> place card onto board
-    //     2. make player attack -> subtract health from opponent
-
-    //     Decrement Health Opponent if Attack is made
-
-        
-    // }
-
     public fun draw(game: &mut Game, ctx: &mut TxContext): &vector<Card>{
         let (player, _, _) = get_players(game, ctx);
         // TODO: Hash randomness from opponent + seed phrase generated at beginning % length of deck = index
         // let top_card = vector::pop_back<Card>(&mut player.deck);
-        vector::push_back<Card>(&mut player.hand, top_card);
+        //vector::push_back<Card>(&mut player.hand, top_card);
         &player.hand
     }
 
@@ -159,19 +123,19 @@ module card_game::card_game {
         &player.hand
     }
 
-    // TODO: Figure out if board state should be apart of player struct
     public entry fun attack(
         game: Game, 
     attacking_character_index: u64, 
     defending_character_index: u64, 
     ctx: &mut TxContext) {
+        let game_over = false;
         let (attacking_player, defending_player, order) = get_players(&mut game, ctx);
         if(order == true) {
             // choose a card from player_1's board to attack with
-            let attacking_character = vector::borrow<Card>(&mut game.board_state.player_1_board, attacking_character_index);
+            let attacking_character = vector::borrow<Card>(&mut game.player_1.board, attacking_character_index);
 
             // choose a card from player_2's board to attack
-            let defending_character = vector::borrow_mut<Card>(&mut game.board_state.player_2_board, defending_character_index);
+            let defending_character = vector::borrow_mut<Card>(&mut game.player_2.board, defending_character_index);
 
              // subtract health from player_2's card and health
             if(attacking_character.type.attack >= defending_character.type.life) {
@@ -188,19 +152,43 @@ module card_game::card_game {
                         id: object::uid_to_inner(&game.id), 
                         winner: PLAYER_1_WINNER
                     });
-                let Game {
-                    id,
-                    player_1: _,
-                    player_2: _,
-                    board_state: _,
-                    winner: _
-                } = game;
-                object::delete(id);
+                game_over = true;
             }
         }
         // repeat logic if player_2 is attacking
         else{
-            
+            let attacking_character = vector::borrow<Card>(&mut game.player_2.board, attacking_character_index);
+
+            let defending_character = vector::borrow_mut<Card>(&mut game.player_1.board, defending_character_index);
+
+            if(attacking_character.type.attack >= defending_character.type.life) {
+                let difference = attacking_character.type.attack - defending_character.type.life;
+                defending_character.type.life = 0;
+                defending_player.life = defending_player.life - difference;
+            } else {
+                defending_character.type.life = defending_character.type.life - attacking_character.type.attack;
+            };
+
+            if(defending_player.life <= 0) {
+                event::emit(
+                    GameOver{
+                        id: object::uid_to_inner(&game.id), 
+                        winner: PLAYER_2_WINNER
+                    });
+                game_over = true;
+            }
+        };
+
+        if(game_over) {
+            let Game{
+                id,
+                player_1: player_1,
+                player_2: player_2,
+                winner: _,
+            } = game;
+            object::delete(id);
+            object::delete(player_1.id);
+            object::delete(player_2.id);
         }
 
         
@@ -212,7 +200,7 @@ module card_game::card_game {
 
     public entry fun end_turn(game: Game, player_turn: address, ctx: &mut TxContext) {
          //assert!(player_turn != tx_context::sender(ctx), ESAME_PLAYER);
-        let (player, _) = get_players(&mut game, ctx);
+        let (player, _, _) = get_players(&mut game, ctx);
         assert!(player_turn == game.player_1.addr || player_turn == game.player_2.addr, EPLAYER_NOT_IN_GAME);
         // public randomness provided before end of turn
         
@@ -220,10 +208,10 @@ module card_game::card_game {
     }
 
     // Todo: check if this function should exist in zk
-    public fun get_deck(game: &mut Game, ctx: &mut TxContext): &vector<Card> {
-        let player = get_players(game, ctx);
-        &player.deck
-    }
+    // public fun get_deck(game: &mut Game, ctx: &mut TxContext): &vector<Card> {
+    //     let player = get_players(game, ctx);
+    //     &player.deck
+    // }
     
     ///////////////////////
     // PRIVATE FUNCTIONS //
