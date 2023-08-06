@@ -12,9 +12,11 @@ module card_game::card_game {
     const NO_WINNER: u64 = 0;
     const PLAYER_1_WINNER: u64 = 1;
     const PLAYER_2_WINNER: u64 = 2;
-    const ESAME_PLAYER: u64 = 4;
-    const EPLAYER_NOT_IN_GAME: u64 = 5;
-    const EINDEX_OUT_OF_BOUNDS: u64 = 6;
+
+    const ESAME_PLAYER: u64 = 3;
+    const EPLAYER_NOT_IN_GAME: u64 = 4;
+    const EINDEX_OUT_OF_BOUNDS: u64 = 5;
+    const ECHALLENGE_ERROR: u64 = 6;
     
     // T is either character or spell
     struct Game has key, store{
@@ -49,6 +51,12 @@ module card_game::card_game {
         image_url: Url,
     }
 
+    struct Challenge has key {
+        id: UID,
+        challenger: address,
+        opponent: address,
+    }
+
     struct Character has store {
         life: u64,
         attack: u64,
@@ -59,9 +67,35 @@ module card_game::card_game {
         winner: u64
     }
 
+    struct ChallengeAccepted has copy, drop {
+        id: ID,
+        challenger: address,
+        accepter: address
+    }
+
     // deck = assets of user up to 8 cards
 
-    public entry fun challenge(opponent: address, ctx: &mut TxContext) {
+    public entry fun challenge_person(opponent: address, ctx: &mut TxContext) {
+        let challenge = Challenge{
+            id: object::new(ctx),
+            challenger: tx_context::sender(ctx),
+            opponent: opponent,
+        };
+        transfer::transfer(challenge, opponent);
+    }
+
+    public entry fun accept_challenge(challenge: Challenge, ctx: &mut TxContext) {
+        assert!(challenge.opponent == tx_context::sender(ctx), ECHALLENGE_ERROR);
+        event::emit(
+            ChallengeAccepted{
+                id: object::uid_to_inner(&challenge.id), 
+                challenger: challenge.challenger,
+                accepter: tx_context::sender(ctx),
+        });
+        start_game(challenge.challenger, ctx);
+    }
+
+    public entry fun start_game(opponent: address, ctx: &mut TxContext) {
         //assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
         
         // get the deck from player's owned objects
@@ -184,8 +218,8 @@ module card_game::card_game {
                 winner: _,
             } = game;
             object::delete(id);
-            object::delete(player_1.id);
-            object::delete(player_2.id);
+            // object::delete(player_1.id);
+            // object::delete(player_2.id);
         }
     }
 
