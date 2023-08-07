@@ -9,6 +9,7 @@ module card_game::card_game {
     use std::vector;
     use sui::groth16;
     use std::hash;
+    use sui::ecvrf;
 
     const STARTING_HEALTH: u64 = 100;
     const NO_WINNER: u64 = 0;
@@ -25,7 +26,6 @@ module card_game::card_game {
         id: UID,
         player_1: Player,
         player_2: Player,
-        // board: Board,
         winner: u64
     }
 
@@ -40,11 +40,6 @@ module card_game::card_game {
         turn_randomness: vector<u8>,
         life: u64,
     }
-
-    // struct Board has store {
-    //     player_1_board: vector<Card>,
-    //     player_2_board: vector<Card>,
-    // }
 
     struct Card has key, store{
         id: UID,
@@ -75,6 +70,11 @@ module card_game::card_game {
         id: ID,
         challenger: address,
         accepter: address
+    }
+
+    struct TurnEnded has copy, drop{
+        player: address,
+        randomness: vector<u8>,
     }
 
     struct VerifiedEvent has copy, drop {
@@ -143,24 +143,32 @@ module card_game::card_game {
         transfer::transfer(game, tx_context::sender(ctx));
     }
 
-    // uses opponent randomness at end of turn + private committment to generate random num
+    // use vrf to get random index
     // TODO: Figure out how to hide card in hand
-    public fun draw(
+    public entry fun draw(
         game: &mut Game, 
-        random_number: u64, 
-        vk: vector<u8>,
-        public_inputs_bytes: vector<u8>,
-        proof_points_bytes: vector<u8>,
+        output: vector<u8>, 
+        alpha_string: vector<u8>, 
+        public_key: vector<u8>, 
+        proof: vector<u8>,
         ctx: &mut TxContext): &vector<Card>{
-        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_PROOF);
         let (attacking_player, defending_player) = get_players(game, ctx);
         let size = vector::length<Card>(&attacking_player.deck);
-        let random_index = random_number % size;
-        let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, random_index);
+        let random_index = vector::pop_back(&mut output) % (size as u8);
+        let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, (random_index as u64));
+        vector::push_back<Card>(&mut attacking_player.hand, card_to_draw);
         &attacking_player.hand
     }
 
-    public fun discard(game: &mut Game, index: u64, ctx: &mut TxContext): &vector<Card>{
+    public fun discard(
+        game: &mut Game, 
+        index: u64,
+        vk: vector<u8>, 
+        public_inputs_bytes: vector<u8>, 
+        proof_points_bytes: vector<u8>,
+        ctx: &mut TxContext): &vector<Card>{
+        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
         let (player, _) = get_players(game, ctx);
         assert!(index < vector::length<Card>(&player.hand), EINDEX_OUT_OF_BOUNDS);
         let card = vector::swap_remove<Card>(&mut player.hand, index);
@@ -317,25 +325,30 @@ module card_game::card_game {
     public entry fun end_turn(
         game: Game, 
     player_turn: address, 
-    randomness: u256,
+    randomness: vector<u8>,
     ctx: &mut TxContext) {
         assert!(player_turn != tx_context::sender(ctx), ESAME_PLAYER);
         let (player, _) = get_players(&mut game, ctx);
         assert!(player_turn == game.player_1.addr || player_turn == game.player_2.addr, EPLAYER_NOT_IN_GAME);
         transfer::transfer(game, player_turn);
+        event::emit(
+            TurnEnded{
+                player: tx_context::sender(ctx),
+                randomness: randomness,
+            });
     }
-
-    // Todo: check if this function should exist in zk
-    // public fun get_deck(game: &mut Game, ctx: &mut TxContext): &vector<Card> {
-    //     let player = get_players(game, ctx);
-    //     &player.deck
-    // }
 
     public fun verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>): bool {
         let pvk = groth16::prepare_verifying_key(&groth16::bn254(), &vk);
         let public_inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
         let proof_points = groth16::proof_points_from_bytes(proof_points_bytes);
         let is_verified = groth16::verify_groth16_proof(&groth16::bn254(), &pvk, &public_inputs, &proof_points);
+        event::emit(VerifiedEvent {is_verified: is_verified});
+        is_verified
+    }
+
+    public fun verify_ecvrf_output(output: vector<u8>, alpha_string: vector<u8>, public_key: vector<u8>, proof: vector<u8>): bool {
+        let is_verified = ecvrf::ecvrf_verify(&output, &alpha_string, &public_key, &proof);
         event::emit(VerifiedEvent {is_verified: is_verified});
         is_verified
     }
@@ -352,33 +365,4 @@ module card_game::card_game {
             (&mut game.player_2, &mut game.player_1)
         }
     }
-
-    // fun replace_card(game: &mut Game, index: u64, ctx: &mut TxContext): Card{
-    //     let (player, _) = get_players(game, ctx);
-    //     let size = vector::length<Card>(&mut player.hand);
-    //     assert!(index < size, EINDEX_OUT_OF_BOUNDS);
-    //     let card_to_delete = vector::borrow_mut<Card>(&mut player.hand, index);
-    //     let i = 0;
-    //     // swap values in vector to place card we don't want at end and pop it
-    //     while(i < size) {
-    //         if(i == index) {
-    //             let card_to_swap = vector::borrow_mut<Card>(&mut player.hand, size - 1);
-    //             let temp = card_to_delete;
-    //             card_to_delete = card_to_swap;
-    //             card_to_swap = temp;
-    //             let card = vector::pop_back<Card>(&mut player.hand);
-    //             return card
-    //         }
-    //         else{
-    //             i = i + 1;
-    //         }
-    //     };
-    //     Card{
-    //         id: object::new(ctx),
-    //         name: string::utf8(b""),
-    //         description: string::utf8(b""),
-    //         type: Character{life: 0, attack: 0},
-    //         image_url: url::new_unsafe_from_bytes(b""),
-    //     }
-    // }
 }

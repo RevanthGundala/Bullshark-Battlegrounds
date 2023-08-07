@@ -1,0 +1,9 @@
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/rust-backend/target/debug/deps/ark_crypto_primitives-59a3df4c77eda34f.rmeta: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/macros.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/snark/mod.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/rust-backend/target/debug/deps/libark_crypto_primitives-59a3df4c77eda34f.rlib: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/macros.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/snark/mod.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/rust-backend/target/debug/deps/ark_crypto_primitives-59a3df4c77eda34f.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/macros.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/snark/mod.rs
+
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/lib.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/macros.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ark-crypto-primitives-0.4.0/src/snark/mod.rs:

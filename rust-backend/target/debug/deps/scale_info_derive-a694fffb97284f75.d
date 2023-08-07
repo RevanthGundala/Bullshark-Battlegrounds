@@ -1,0 +1,8 @@
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/rust-backend/target/debug/deps/libscale_info_derive-a694fffb97284f75.dylib: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/attr.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/trait_bounds.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/utils.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/rust-backend/target/debug/deps/scale_info_derive-a694fffb97284f75.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/attr.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/trait_bounds.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/utils.rs
+
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/lib.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/attr.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/trait_bounds.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/scale-info-derive-2.9.0/src/utils.rs:
