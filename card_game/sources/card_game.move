@@ -7,6 +7,8 @@ module card_game::card_game {
     use std::option::{Self, Option, some};
     use sui::event;
     use std::vector;
+    use sui::groth16;
+    use std::hash;
 
     const STARTING_HEALTH: u64 = 100;
     const NO_WINNER: u64 = 0;
@@ -16,7 +18,7 @@ module card_game::card_game {
     const ESAME_PLAYER: u64 = 3;
     const EPLAYER_NOT_IN_GAME: u64 = 4;
     const EINDEX_OUT_OF_BOUNDS: u64 = 5;
-    const ECHALLENGE_ERROR: u64 = 6;
+    const EINVALID_PROOF: u64 = 6;
     
     // T is either character or spell
     struct Game has key, store{
@@ -34,6 +36,8 @@ module card_game::card_game {
         hand: vector<Card>,
         graveyard: vector<Card>,
         board: vector<Card>,
+        private_seed: vector<u8>,
+        turn_randomness: vector<u8>,
         life: u64,
     }
 
@@ -73,9 +77,14 @@ module card_game::card_game {
         accepter: address
     }
 
+    struct VerifiedEvent has copy, drop {
+        is_verified: bool,
+    }
+
     // deck = assets of user up to 8 cards
 
     public entry fun challenge_person(opponent: address, ctx: &mut TxContext) {
+        assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
         let challenge = Challenge{
             id: object::new(ctx),
             challenger: tx_context::sender(ctx),
@@ -84,15 +93,17 @@ module card_game::card_game {
         transfer::transfer(challenge, opponent);
     }
 
-    public entry fun accept_challenge(challenge: Challenge, ctx: &mut TxContext) {
-        assert!(challenge.opponent == tx_context::sender(ctx), ECHALLENGE_ERROR);
+    public entry fun accept_challenge(
+        challenge: Challenge, 
+    sender_private_seed: u256, 
+    opponent_private_seed: u256, ctx: &mut TxContext) {
+        assert!(challenge.opponent != tx_context::sender(ctx), ESAME_PLAYER);
         event::emit(
             ChallengeAccepted{
                 id: object::uid_to_inner(&challenge.id), 
                 challenger: challenge.challenger,
                 accepter: tx_context::sender(ctx),
         });
-        start_game(challenge.challenger, ctx);
         let Challenge {id, 
         challenger: _, 
         opponent: _ } = challenge;
@@ -132,12 +143,21 @@ module card_game::card_game {
         transfer::transfer(game, tx_context::sender(ctx));
     }
 
-    public fun draw(game: &mut Game, ctx: &mut TxContext): &vector<Card>{
-        let (player, _) = get_players(game, ctx);
-        // TODO: Hash randomness from opponent + seed phrase generated at beginning % length of deck = index
-        // let top_card = vector::pop_back<Card>(&mut player.deck);
-        //vector::push_back<Card>(&mut player.hand, top_card);
-        &player.hand
+    // uses opponent randomness at end of turn + private committment to generate random num
+    // TODO: Figure out how to hide card in hand
+    public fun draw(
+        game: &mut Game, 
+        random_number: u64, 
+        vk: vector<u8>,
+        public_inputs_bytes: vector<u8>,
+        proof_points_bytes: vector<u8>,
+        ctx: &mut TxContext): &vector<Card>{
+        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        let (attacking_player, defending_player) = get_players(game, ctx);
+        let size = vector::length<Card>(&attacking_player.deck);
+        let random_index = random_number % size;
+        let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, random_index);
+        &attacking_player.hand
     }
 
     public fun discard(game: &mut Game, index: u64, ctx: &mut TxContext): &vector<Card>{
@@ -294,12 +314,14 @@ module card_game::card_game {
         }
     }
 
-    public entry fun end_turn(game: Game, player_turn: address, ctx: &mut TxContext) {
-         //assert!(player_turn != tx_context::sender(ctx), ESAME_PLAYER);
+    public entry fun end_turn(
+        game: Game, 
+    player_turn: address, 
+    randomness: u256,
+    ctx: &mut TxContext) {
+        assert!(player_turn != tx_context::sender(ctx), ESAME_PLAYER);
         let (player, _) = get_players(&mut game, ctx);
         assert!(player_turn == game.player_1.addr || player_turn == game.player_2.addr, EPLAYER_NOT_IN_GAME);
-        // public randomness provided before end of turn
-        
         transfer::transfer(game, player_turn);
     }
 
@@ -308,6 +330,15 @@ module card_game::card_game {
     //     let player = get_players(game, ctx);
     //     &player.deck
     // }
+
+    public fun verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>): bool {
+        let pvk = groth16::prepare_verifying_key(&groth16::bn254(), &vk);
+        let public_inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
+        let proof_points = groth16::proof_points_from_bytes(proof_points_bytes);
+        let is_verified = groth16::verify_groth16_proof(&groth16::bn254(), &pvk, &public_inputs, &proof_points);
+        event::emit(VerifiedEvent {is_verified: is_verified});
+        is_verified
+    }
     
     ///////////////////////
     // PRIVATE FUNCTIONS //
