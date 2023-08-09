@@ -11,11 +11,15 @@ module card_game::card_game {
     use std::hash;
     use sui::ecvrf;
 
+    // CONSTANTS
     const STARTING_HEALTH: u64 = 100;
+
+    // ENUMS
     const NO_WINNER: u64 = 0;
     const PLAYER_1_WINNER: u64 = 1;
     const PLAYER_2_WINNER: u64 = 2;
 
+    // ERRORS
     const ESAME_PLAYER: u64 = 3;
     const EPLAYER_NOT_IN_GAME: u64 = 4;
     const EINDEX_OUT_OF_BOUNDS: u64 = 5;
@@ -96,7 +100,6 @@ module card_game::card_game {
                 accepter: tx_context::sender(ctx),
         });
 
-         // get the deck from player's owned objects
         let player_1 = Player{
             id: object::new(ctx),
             addr: challenge.challenger,
