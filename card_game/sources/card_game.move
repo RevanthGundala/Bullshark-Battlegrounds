@@ -357,7 +357,7 @@ module card_game::card_game {
     // PRIVATE FUNCTIONS //
     ///////////////////////
 
-    // return players in order of attacking -> defending
+    // return players in order of attacking, defending
     fun get_players(game: &mut Game, ctx: &mut TxContext): (&mut Player, &mut Player) {
         if(game.player_1.addr == tx_context::sender(ctx)) {
             (&mut game.player_1, &mut game.player_2)
