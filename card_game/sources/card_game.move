@@ -4,39 +4,43 @@ module card_game::card_game {
     use sui::url::{Self, Url};
     use std::string::{Self, String};
     use sui::tx_context::{TxContext, Self};
-    use std::option::{Self, Option, some};
+//    use std::option::{Self, Option, some};
     use sui::event;
     use std::vector;
     use sui::groth16;
-    use std::hash;
+    // use std::hash;
     use sui::ecvrf;
-
+    
     // CONSTANTS
     const STARTING_HEALTH: u64 = 100;
-
-    // ENUMS
-    const NO_WINNER: u64 = 0;
-    const PLAYER_1_WINNER: u64 = 1;
-    const PLAYER_2_WINNER: u64 = 2;
+    const STARTING_DECK_SIZE: u64 = 10;
+    const STARTING_HAND_SIZE: u64 = 6;
 
     // ERRORS
     const ESAME_PLAYER: u64 = 3;
     const EPLAYER_NOT_IN_GAME: u64 = 4;
     const EINDEX_OUT_OF_BOUNDS: u64 = 5;
-    const EINVALID_PROOF: u64 = 6;
+    const EINVALID_PROOF: u64 = 7;
+    const EINVALID_VRF: u64 = 8;
+    const EINVALID_HAND_SIZE: u64 = 9;
+    const EAttackersNotSelectedCorrectly: u64 = 10;
+    const EDefendersNotSelectedCorrectly: u64 = 11;
+    const ETooManyDefendingCharacters: u64 = 12;
+    const EAttackersAndDefendersNotEqual: u64 = 13;
     
     struct Game has key, store{
         id: UID,
         player_1: Player,
-        player_2: Player,
-        winner: u64
+        player_2: Player
     }
 
     struct Player has key, store{
         id: UID,
         addr: address,
-        deck: vector<Card>,
-        hand: vector<u8>,
+        deck_commitment: vector<u8>,
+        deckSize: u64,
+        hand_commitment: vector<u8>,
+        handSize: u64,
         graveyard: vector<Card>,
         board: vector<Card>,
         life: u64,
@@ -52,8 +56,8 @@ module card_game::card_game {
     }
 
     struct Character has store {
-        life: u64,
         attack: u64,
+        defense: u64,   
     }
 
     struct Challenge has key {
@@ -74,7 +78,8 @@ module card_game::card_game {
 
     struct GameOver has copy, drop {
         id: ID,
-        winner: u64
+        winner: address,
+        loser: address,
     }
 
     struct VerifiedEvent has copy, drop {
@@ -100,11 +105,14 @@ module card_game::card_game {
                 accepter: tx_context::sender(ctx),
         });
 
+        // Create a new game
         let player_1 = Player{
             id: object::new(ctx),
             addr: challenge.challenger,
-            deck: vector<Card>[], // get deck from player's owned objects (Cards) and shuffle
-            hand: vector<u8>[],   // committment
+            deck_commitment: vector<u8>[], // get deck from player's owned objects (Cards) and shuffle
+            deckSize: STARTING_DECK_SIZE,
+            hand_commitment: vector<u8>[],   // committment
+            handSize: STARTING_HAND_SIZE,
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
@@ -112,8 +120,10 @@ module card_game::card_game {
         let player_2 = Player{
             id: object::new(ctx),
             addr: challenge.opponent,
-            deck: vector<Card>[],
-            hand: vector<u8>[],
+            deck_commitment: vector<u8>[],
+            deckSize: STARTING_DECK_SIZE,
+            hand_commitment: vector<u8>[],
+            handSize: STARTING_HAND_SIZE,
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
@@ -122,8 +132,7 @@ module card_game::card_game {
         let game = Game{
             id: object::new(ctx),
             player_1: player_1,
-            player_2: player_2,
-            winner: NO_WINNER,
+            player_2: player_2
         };
 
         transfer::transfer(game, challenge.challenger);
@@ -140,182 +149,157 @@ module card_game::card_game {
         alpha_string: vector<u8>, 
         public_key: vector<u8>, 
         proof: vector<u8>,
-        ctx: &mut TxContext): &vector<Card>{
-        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_PROOF);
-        let (attacking_player, defending_player) = get_players(game, ctx);
-        let size = vector::length<Card>(&attacking_player.deck);
-        let random_index = vector::pop_back(&mut output) % (size as u8);
-        let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, (random_index as u64));
-        vector::push_back<Card>(&mut attacking_player.hand, card_to_draw);
-        &attacking_player.hand
+        vk: vector<u8>, 
+        public_inputs_bytes: vector<u8>, 
+        proof_points_bytes: vector<u8>,
+        new_hand_commitment: vector<u8>,
+        ctx: &mut TxContext){
+        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
+        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        let (attacking_player, _) = get_players(game, ctx);
+        // let random_index = vector::pop_back(&mut output) % (attacking_player.handSize as u8);
+        // let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, (random_index as u64));
+
+        // Place card in hand
+        attacking_player.hand_commitment = new_hand_commitment;
+        attacking_player.handSize = attacking_player.handSize + 1;
+        attacking_player.deckSize = attacking_player.deckSize - 1;
     }
 
     public fun discard(
         game: &mut Game, 
-        index: u64,
+        output: vector<u8>, 
+        alpha_string: vector<u8>, 
+        public_key: vector<u8>, 
+        proof: vector<u8>,
         vk: vector<u8>, 
         public_inputs_bytes: vector<u8>, 
         proof_points_bytes: vector<u8>,
+        card_to_discard: Card,
         ctx: &mut TxContext): &vector<Card>{
+        let (attacking_player, _) = get_players(game, ctx);
+        assert!(attacking_player.handSize > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
+        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
-        let (player, _) = get_players(game, ctx);
-        assert!(index < vector::length<Card>(&player.hand), EINDEX_OUT_OF_BOUNDS);
-        let card = vector::swap_remove<Card>(&mut player.hand, index);
-        vector::push_back<Card>(&mut player.graveyard, card);
-        &player.hand
+        attacking_player.handSize = attacking_player.handSize - 1;
+        vector::push_back(&mut attacking_player.graveyard, card_to_discard);
+        &attacking_player.graveyard
     }
 
-    public fun play_card(game: &mut Game, index: u64, ctx: &mut TxContext): &vector<Card> {
-        let (player, _) = get_players(game, ctx);
-        assert!(index < vector::length<Card>(&player.hand), EINDEX_OUT_OF_BOUNDS);
-        // TODO: zk
-
-        // move card from hand to board
-        let card = vector::swap_remove<Card>(&mut player.hand, index);
-        vector::push_back<Card>(&mut player.board, card);
-        &player.board
+    public fun play(
+        game: &mut Game, 
+        output: vector<u8>, 
+        alpha_string: vector<u8>, 
+        public_key: vector<u8>, 
+        proof: vector<u8>,
+        vk: vector<u8>, 
+        public_inputs_bytes: vector<u8>, 
+        proof_points_bytes: vector<u8>,
+        card_to_play: Card,
+        ctx: &mut TxContext): &vector<Card> {
+        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
+        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        let (attacking_player, _) = get_players(game, ctx);
+        attacking_player.handSize = attacking_player.handSize - 1;
+        vector::push_back(&mut attacking_player.board, card_to_play);
+        &attacking_player.board
     }
-
+    
     public entry fun attack(
         game: Game, 
-    attacking_character_index: u64, 
-    defending_character_index: u64, 
+    attacking_characters: vector<Card>, 
+    defending_characters: vector<Card>, 
+    direct_player_attacks: vector<u64>, 
     ctx: &mut TxContext){
-        let game_over = false;
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
-        // choose a card from player_1's board to attack with
-        let attacking_character = vector::borrow<Card>(&attacking_player.board, attacking_character_index);
 
-        // choose a card from player_2's board to attack
-        let defending_character = vector::borrow_mut<Card>(&mut defending_player.board, defending_character_index);
+        let attacking_size = vector::length<Card>(&attacking_characters);
+        let defending_size = vector::length<Card>(&defending_characters);
+        let direct_player_attack_size = vector::length<u64>(&direct_player_attacks);
 
-            // subtract health from player_2's card and health
-        if(attacking_character.type.attack >= defending_character.type.life) {
-            let difference = attacking_character.type.attack - defending_character.type.life;
-            defending_character.type.life = 0;
-            defending_player.life = defending_player.life - difference;
-        } else {
-            defending_character.type.life = defending_character.type.life - attacking_character.type.attack;
-        };
+        let attacking_board_size = vector::length<Card>(&attacking_player.board);
+        let defending_board_size = vector::length<Card>(&defending_player.board);
+       
+        assert!(attacking_size <= attacking_board_size, EAttackersNotSelectedCorrectly);
+        // I.e. user can't select 2 characters and attack 3 objects
+        assert!(attacking_size <= defending_size + direct_player_attack_size, ETooManyDefendingCharacters); 
+        assert!(defending_size >= defending_board_size, EDefendersNotSelectedCorrectly);        
+
+        let game_over = false;
         
-        if(defending_player.life <= 0) {
-            event::emit(
-                GameOver{
-                    id: object::uid_to_inner(&game.id), 
-                    winner: PLAYER_1_WINNER
-                });
-            game_over = true;
+        // iterate over all attacking_characters and attack resepective opponent
+        let i = 0;
+        while(i < attacking_size){
+            // get attacking character
+            let attacking_character = vector::borrow_mut<Card>(&mut attacking_characters, i);
+            // attack the actual characters
+            if(i < defending_size) {
+                // get the defending character
+                let defending_character = vector::borrow_mut<Card>(&mut defending_characters, i);
+
+                // Compute the attack results (Sui doesn't support negative numbers)
+                if(attacking_character.type.attack < defending_character.type.defense) {
+                    let difference = defending_character.type.defense - attacking_character.type.attack;
+                    defending_character.type.defense = difference;
+                };
+                if(attacking_character.type.defense > defending_character.type.attack){
+                    let difference = attacking_character.type.defense - defending_character.type.attack;
+                    attacking_character.type.defense = difference;
+                }
+                // remove characters from board
+                else{
+                    if(attacking_character.type.attack >= defending_character.type.defense){
+                        vector::remove<Card>(&mut defending_characters, i);
+                    };
+                    if(attacking_character.type.defense <= defending_character.type.attack){
+                        vector::remove<Card>(&mut attacking_characters, i);
+                    };
+                };
+            }   
+            // attack the player
+            else{
+                defending_player.life = defending_player.life - attacking_character.type.attack;
+                // Game is over check
+                if(defending_player.life <= 0){
+                    game_over = true;
+                    break
+                };
+            };
+            i = i + 1;
         };
-        
-        // TODO: Delete game
-        if(game_over) {
-            let Game{
-                id: game_id,
-                player_1: player_1,
-                player_2: player_2,
-                winner: _,
-            } = game;
 
-            let Player{
-                id: player_1_id,
-                addr: _,
-                deck: player_1_deck,
-                hand: player_1_hand,
-                graveyard: player_1_graveyard,
-                board: player_1_board,
-                life: _,
-            } = player_1;
+        if(game_over){
+           event::emit(
+            GameOver{
+                id: object::uid_to_inner(&game.id),
+                winner: attacking_player.addr,
+                loser: defending_player.addr,
+            }
+           );
+        };
 
-            // // Todo: find min length of decks and delete in order instead of deleting all one by one
-            let i = 0;
-            let size = vector::length<Card>(&mut player_1_deck);
-            while(i < size){
-                let card = vector::pop_back<Card>(&mut player_1_deck);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                    type: Character{
-                        attack: _,
-                        life: _
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty<Card>(player_1_deck);
-
-            i = 0;
-            size = vector::length<Card>(&mut player_1_hand);
-            while(i < size){
-                let card = vector::pop_back<Card>(&mut player_1_hand);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                    type: Character{
-                        attack: _,
-                        life: _
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty<Card>(player_1_hand);
-
-            i = 0;
-            size = vector::length<Card>(&mut player_1_graveyard);
-            while(i < size){
-                let card = vector::pop_back<Card>(&mut player_1_graveyard);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                   type: Character{
-                        attack: _,
-                        life: _
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty<Card>(player_1_graveyard);
-
-            i = 0;
-            size = vector::length<Card>(&mut player_1_board);
-            while(i < size){
-                let card = vector::pop_back<Card>(&mut player_1_board);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                    type: Character{
-                        attack: _,
-                        life: _
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty<Card>(player_1_board);
-
-
-            //object::delete(attacking_player_id);
-
-            
-            object::delete(game_id);
-        }
+        let Game{
+            id,
+            player_1: _,
+            player_2: _
+        } = game;
+        object::delete(id);
     }
 
-    public entry fun end_turn(game: Game, pass_turn_to: address, ctx: &mut TxContext) {
-        let (attacking_player, defending_player) = get_players(&mut game, ctx);
-        assert!(pass_turn_to == defending_player.addr, ESAME_PLAYER);
-        transfer::transfer(game, pass_turn_to);
+    public entry fun end_turn(game: Game, ctx: &mut TxContext) {
+        let (_, defending_player) = get_players(&mut game, ctx);
+        let defending_player_address = defending_player.addr;
+        transfer::transfer(game, defending_player_address);
         event::emit(TurnEnded{player: tx_context::sender(ctx)});
+    }
+
+    // return players in order of attacking, defending
+    public fun get_players(game: &mut Game, ctx: &mut TxContext): (&mut Player, &mut Player) {
+        if(game.player_1.addr == tx_context::sender(ctx)) {
+            (&mut game.player_1, &mut game.player_2)
+        } else {
+            (&mut game.player_2, &mut game.player_1)
+        }
     }
 
     public fun verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>): bool {
@@ -331,18 +315,5 @@ module card_game::card_game {
         let is_verified = ecvrf::ecvrf_verify(&output, &alpha_string, &public_key, &proof);
         event::emit(VerifiedEvent {is_verified: is_verified});
         is_verified
-    }
-    
-    ///////////////////////
-    // PRIVATE FUNCTIONS //
-    ///////////////////////
-
-    // return players in order of attacking, defending
-    fun get_players(game: &mut Game, ctx: &mut TxContext): (&mut Player, &mut Player) {
-        if(game.player_1.addr == tx_context::sender(ctx)) {
-            (&mut game.player_1, &mut game.player_2)
-        } else {
-            (&mut game.player_2, &mut game.player_1)
-        }
     }
 }
