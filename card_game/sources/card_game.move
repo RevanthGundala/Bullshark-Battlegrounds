@@ -21,7 +21,6 @@ module card_game::card_game {
     const EINDEX_OUT_OF_BOUNDS: u64 = 5;
     const EINVALID_PROOF: u64 = 6;
     
-    // T is either character or spell
     struct Game has key, store{
         id: UID,
         player_1: Player,
@@ -33,11 +32,9 @@ module card_game::card_game {
         id: UID,
         addr: address,
         deck: vector<Card>,
-        hand: vector<Card>,
+        hand: vector<u8>,
         graveyard: vector<Card>,
         board: vector<Card>,
-        private_seed: vector<u8>,
-        turn_randomness: vector<u8>,
         life: u64,
     }
 
@@ -50,20 +47,15 @@ module card_game::card_game {
         image_url: Url,
     }
 
-    struct Challenge has key {
-        id: UID,
-        challenger: address,
-        opponent: address,
-    }
-
     struct Character has store {
         life: u64,
         attack: u64,
     }
 
-    struct GameOver has copy, drop {
-        id: ID,
-        winner: u64
+    struct Challenge has key {
+        id: UID,
+        challenger: address,
+        opponent: address,
     }
 
     struct ChallengeAccepted has copy, drop {
@@ -74,14 +66,16 @@ module card_game::card_game {
 
     struct TurnEnded has copy, drop{
         player: address,
-        randomness: vector<u8>,
+    }
+
+    struct GameOver has copy, drop {
+        id: ID,
+        winner: u64
     }
 
     struct VerifiedEvent has copy, drop {
         is_verified: bool,
     }
-
-    // deck = assets of user up to 8 cards
 
     public entry fun challenge_person(opponent: address, ctx: &mut TxContext) {
         assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
@@ -93,41 +87,30 @@ module card_game::card_game {
         transfer::transfer(challenge, opponent);
     }
 
-    public entry fun accept_challenge(
-        challenge: Challenge, 
-    sender_private_seed: u256, 
-    opponent_private_seed: u256, ctx: &mut TxContext) {
-        assert!(challenge.opponent != tx_context::sender(ctx), ESAME_PLAYER);
+    public entry fun accept_challenge(challenge: Challenge, ctx: &mut TxContext) {
+        assert!(challenge.opponent == tx_context::sender(ctx), ESAME_PLAYER);
         event::emit(
             ChallengeAccepted{
                 id: object::uid_to_inner(&challenge.id), 
                 challenger: challenge.challenger,
                 accepter: tx_context::sender(ctx),
         });
-        let Challenge {id, 
-        challenger: _, 
-        opponent: _ } = challenge;
-        object::delete(id);
-    }
 
-    public entry fun start_game(opponent: address, ctx: &mut TxContext) {
-        //assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
-        
-        // get the deck from player's owned objects
+         // get the deck from player's owned objects
         let player_1 = Player{
             id: object::new(ctx),
-            addr: tx_context::sender(ctx),
+            addr: challenge.challenger,
             deck: vector<Card>[], // get deck from player's owned objects (Cards) and shuffle
-            hand: vector<Card>[],  
+            hand: vector<u8>[],   // committment
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
         };
         let player_2 = Player{
             id: object::new(ctx),
-            addr: opponent,
+            addr: challenge.opponent,
             deck: vector<Card>[],
-            hand: vector<Card>[],
+            hand: vector<u8>[],
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
@@ -140,7 +123,10 @@ module card_game::card_game {
             winner: NO_WINNER,
         };
 
-        transfer::transfer(game, tx_context::sender(ctx));
+        transfer::transfer(game, challenge.challenger);
+
+        let Challenge {id, challenger: _, opponent: _ } = challenge;
+        object::delete(id);
     }
 
     // use vrf to get random index
@@ -322,20 +308,11 @@ module card_game::card_game {
         }
     }
 
-    public entry fun end_turn(
-        game: Game, 
-    player_turn: address, 
-    randomness: vector<u8>,
-    ctx: &mut TxContext) {
-        assert!(player_turn != tx_context::sender(ctx), ESAME_PLAYER);
-        let (player, _) = get_players(&mut game, ctx);
-        assert!(player_turn == game.player_1.addr || player_turn == game.player_2.addr, EPLAYER_NOT_IN_GAME);
-        transfer::transfer(game, player_turn);
-        event::emit(
-            TurnEnded{
-                player: tx_context::sender(ctx),
-                randomness: randomness,
-            });
+    public entry fun end_turn(game: Game, pass_turn_to: address, ctx: &mut TxContext) {
+        let (attacking_player, defending_player) = get_players(&mut game, ctx);
+        assert!(pass_turn_to == defending_player.addr, ESAME_PLAYER);
+        transfer::transfer(game, pass_turn_to);
+        event::emit(TurnEnded{player: tx_context::sender(ctx)});
     }
 
     public fun verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>): bool {
