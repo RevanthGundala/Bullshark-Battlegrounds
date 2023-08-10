@@ -27,6 +27,7 @@ module card_game::card_game {
     const EDefendersNotSelectedCorrectly: u64 = 11;
     const ETooManyDefendingCharacters: u64 = 12;
     const EAttackersAndDefendersNotEqual: u64 = 13;
+    const EInvalid_Deck_Size: u64 = 14;
     
     struct Game has key, store{
         id: UID,
@@ -38,9 +39,9 @@ module card_game::card_game {
         id: UID,
         addr: address,
         deck_commitment: vector<u8>,
-        deckSize: u64,
+        deck_size: u64,
         hand_commitment: vector<u8>,
-        handSize: u64,
+        hand_size: u64,
         graveyard: vector<Card>,
         board: vector<Card>,
         life: u64,
@@ -86,7 +87,11 @@ module card_game::card_game {
         is_verified: bool,
     }
 
-    public entry fun challenge_person(opponent: address, ctx: &mut TxContext) {
+    fun init(ctx: &mut TxContext) {
+
+    }
+
+    public fun challenge_person(opponent: address, ctx: &mut TxContext) {
         assert!(opponent != tx_context::sender(ctx), ESAME_PLAYER);
         let challenge = Challenge{
             id: object::new(ctx),
@@ -110,9 +115,9 @@ module card_game::card_game {
             id: object::new(ctx),
             addr: challenge.challenger,
             deck_commitment: vector<u8>[], // get deck from player's owned objects (Cards) and shuffle
-            deckSize: STARTING_DECK_SIZE,
+            deck_size: STARTING_DECK_SIZE,
             hand_commitment: vector<u8>[],   // committment
-            handSize: STARTING_HAND_SIZE,
+            hand_size: STARTING_HAND_SIZE,
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
@@ -121,9 +126,9 @@ module card_game::card_game {
             id: object::new(ctx),
             addr: challenge.opponent,
             deck_commitment: vector<u8>[],
-            deckSize: STARTING_DECK_SIZE,
+            deck_size: STARTING_DECK_SIZE,
             hand_commitment: vector<u8>[],
-            handSize: STARTING_HAND_SIZE,
+            hand_size: STARTING_HAND_SIZE,
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
@@ -154,16 +159,17 @@ module card_game::card_game {
         proof_points_bytes: vector<u8>,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext){
+        let (attacking_player, _) = get_players(game, ctx);
+        assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
         assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
-        let (attacking_player, _) = get_players(game, ctx);
-        // let random_index = vector::pop_back(&mut output) % (attacking_player.handSize as u8);
+        // let random_index = vector::pop_back(&mut output) % (attacking_player.hand_size as u8);
         // let card_to_draw = vector::swap_remove<Card>(&mut attacking_player.deck, (random_index as u64));
 
         // Place card in hand
         attacking_player.hand_commitment = new_hand_commitment;
-        attacking_player.handSize = attacking_player.handSize + 1;
-        attacking_player.deckSize = attacking_player.deckSize - 1;
+        attacking_player.hand_size = attacking_player.hand_size + 1;
+        attacking_player.deck_size = attacking_player.deck_size - 1;
     }
 
     public fun discard(
@@ -178,10 +184,10 @@ module card_game::card_game {
         card_to_discard: Card,
         ctx: &mut TxContext): &vector<Card>{
         let (attacking_player, _) = get_players(game, ctx);
-        assert!(attacking_player.handSize > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
+        assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
         assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
-        attacking_player.handSize = attacking_player.handSize - 1;
+        attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.graveyard, card_to_discard);
         &attacking_player.graveyard
     }
@@ -197,20 +203,22 @@ module card_game::card_game {
         proof_points_bytes: vector<u8>,
         card_to_play: Card,
         ctx: &mut TxContext): &vector<Card> {
+        let (attacking_player, _) = get_players(game, ctx);
         assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
-        let (attacking_player, _) = get_players(game, ctx);
-        attacking_player.handSize = attacking_player.handSize - 1;
+        attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.board, card_to_play);
         &attacking_player.board
     }
     
-    public entry fun attack(
+    public fun attack(
         game: Game, 
     attacking_characters: vector<Card>, 
     defending_characters: vector<Card>, 
     direct_player_attacks: vector<u64>, 
     ctx: &mut TxContext){
+        let game_over = false;
+        let dead_cards = vector<Card>[];
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
         let attacking_size = vector::length<Card>(&attacking_characters);
@@ -225,7 +233,7 @@ module card_game::card_game {
         assert!(attacking_size <= defending_size + direct_player_attack_size, ETooManyDefendingCharacters); 
         assert!(defending_size >= defending_board_size, EDefendersNotSelectedCorrectly);        
 
-        let game_over = false;
+        
         
         // iterate over all attacking_characters and attack resepective opponent
         let i = 0;
@@ -249,10 +257,12 @@ module card_game::card_game {
                 // remove characters from board
                 else{
                     if(attacking_character.type.attack >= defending_character.type.defense){
-                        vector::remove<Card>(&mut defending_characters, i);
+                        let dead_card = vector::remove<Card>(&mut defending_player.board, i);
+                        vector::push_back<Card>(&mut dead_cards, dead_card);
                     };
                     if(attacking_character.type.defense <= defending_character.type.attack){
-                        vector::remove<Card>(&mut attacking_characters, i);
+                        let dead_card = vector::remove<Card>(&mut attacking_player.board, i);
+                        vector::push_back<Card>(&mut dead_cards, dead_card);
                     };
                 };
             }   
@@ -269,21 +279,8 @@ module card_game::card_game {
         };
 
         if(game_over){
-           event::emit(
-            GameOver{
-                id: object::uid_to_inner(&game.id),
-                winner: attacking_player.addr,
-                loser: defending_player.addr,
-            }
-           );
-        };
-
-        let Game{
-            id,
-            player_1: _,
-            player_2: _
-        } = game;
-        object::delete(id);
+            end_game(game, ctx);
+        }
     }
 
     public entry fun end_turn(game: Game, ctx: &mut TxContext) {
@@ -291,6 +288,10 @@ module card_game::card_game {
         let defending_player_address = defending_player.addr;
         transfer::transfer(game, defending_player_address);
         event::emit(TurnEnded{player: tx_context::sender(ctx)});
+    }
+
+    public entry fun surrender(game: Game, ctx: &mut TxContext) {
+        end_game(game, ctx);
     }
 
     // return players in order of attacking, defending
@@ -316,4 +317,26 @@ module card_game::card_game {
         event::emit(VerifiedEvent {is_verified: is_verified});
         is_verified
     }
+
+    /////////////////////////
+    /// Private Functions ///
+    /////////////////////////
+
+    fun end_game(game: Game, ctx: &mut TxContext) {
+        let (attacking_player, defending_player) = get_players(&mut game, ctx);
+        
+        event::emit(GameOver{
+            id: object::uid_to_inner(&game.id),
+            winner: attacking_player.addr,
+            loser: defending_player.addr,
+        });
+        
+        let Game{
+            id,
+            player_1: _,
+            player_2: _,
+        } = game;
+
+        object::delete(id);
+    } 
 }

@@ -75,3 +75,5 @@ template Play(nHandInputs, nDeckInputs) {
 
 // number of cards in hand
 component main { public [ handSaltHash, hand_card_id_hashes, handCommittment, deckSaltHash, deck_card_id_hashes, deckCommittment, card_id_to_reveal ] } = Play(6, 12);
+
+

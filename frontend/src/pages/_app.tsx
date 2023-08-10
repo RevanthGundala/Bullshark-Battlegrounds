@@ -1,9 +1,11 @@
 import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
 import { EthosConnectProvider } from 'ethos-connect';
+import { ChakraProvider } from '@chakra-ui/react'
 
 export default function App({ Component, pageProps }: AppProps) {
   return(
+    <ChakraProvider>
     <EthosConnectProvider
     ethosConfiguration={{
       // apiKey: [YOUR API KEY] // Optional. Required for email signin. Please contact support@ethoswallet.xyz to acquire an API key.
@@ -13,5 +15,7 @@ export default function App({ Component, pageProps }: AppProps) {
     }}
   >
   <Component {...pageProps} />
-  </EthosConnectProvider>);
+  </EthosConnectProvider>
+  </ChakraProvider>
+  );
 }
