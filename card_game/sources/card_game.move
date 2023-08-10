@@ -79,16 +79,11 @@ module card_game::card_game {
 
     struct GameOver has copy, drop {
         id: ID,
-        winner: address,
-        loser: address,
+        winner: address
     }
 
     struct VerifiedEvent has copy, drop {
         is_verified: bool,
-    }
-
-    fun init(ctx: &mut TxContext) {
-
     }
 
     public fun challenge_person(opponent: address, ctx: &mut TxContext) {
@@ -217,8 +212,6 @@ module card_game::card_game {
     defending_characters: vector<Card>, 
     direct_player_attacks: vector<u64>, 
     ctx: &mut TxContext){
-        let game_over = false;
-        let dead_cards = vector<Card>[];
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
         let attacking_size = vector::length<Card>(&attacking_characters);
@@ -233,7 +226,7 @@ module card_game::card_game {
         assert!(attacking_size <= defending_size + direct_player_attack_size, ETooManyDefendingCharacters); 
         assert!(defending_size >= defending_board_size, EDefendersNotSelectedCorrectly);        
 
-        
+        let game_over = false;
         
         // iterate over all attacking_characters and attack resepective opponent
         let i = 0;
@@ -258,11 +251,11 @@ module card_game::card_game {
                 else{
                     if(attacking_character.type.attack >= defending_character.type.defense){
                         let dead_card = vector::remove<Card>(&mut defending_player.board, i);
-                        vector::push_back<Card>(&mut dead_cards, dead_card);
+                        vector::push_back<Card>(&mut defending_player.graveyard, dead_card);
                     };
                     if(attacking_character.type.defense <= defending_character.type.attack){
                         let dead_card = vector::remove<Card>(&mut attacking_player.board, i);
-                        vector::push_back<Card>(&mut dead_cards, dead_card);
+                        vector::push_back<Card>(&mut attacking_player.graveyard, dead_card);
                     };
                 };
             }   
@@ -277,21 +270,63 @@ module card_game::card_game {
             };
             i = i + 1;
         };
-
+        let defending_player_address = defending_player.addr;
+        let _ = attacking_player.addr;
+         let i = 0;
+            while(i < attacking_size){
+                let card = vector::pop_back<Card>(&mut attacking_characters);
+                let Card{
+                    id: card_id,
+                    name: _,
+                    description: _,
+                    type: Character{
+                        attack: _,
+                        defense: _,
+                    },
+                    image_url: _,
+                } = card;
+                object::delete(card_id);
+                i = i + 1;
+            };
+            vector::destroy_empty(attacking_characters);
+            i = 0;
+            while(i < defending_size){
+                let card = vector::pop_back<Card>(&mut defending_characters);
+                let Card{
+                    id: card_id,
+                    name: _,
+                    description: _,
+                    type: Character{
+                        attack: _,
+                        defense: _,
+                    },
+                    image_url: _,
+                } = card;
+                object::delete(card_id);
+                i = i + 1;
+            };
+            vector::destroy_empty(defending_characters);
         if(game_over){
-            end_game(game, ctx);
+            end_game(game, tx_context::sender(ctx));
+        }
+        else{
+            // end turn
+            transfer::transfer(game, defending_player_address);
+            event::emit(TurnEnded{player: tx_context::sender(ctx)});
         }
     }
 
-    public entry fun end_turn(game: Game, ctx: &mut TxContext) {
-        let (_, defending_player) = get_players(&mut game, ctx);
-        let defending_player_address = defending_player.addr;
-        transfer::transfer(game, defending_player_address);
-        event::emit(TurnEnded{player: tx_context::sender(ctx)});
-    }
+    // public fun end_turn(game: Game, ctx: &mut TxContext) {
+    //     let (_, defending_player) = get_players(&mut game, ctx);
+    //     let defending_player_address = defending_player.addr;
+    //     transfer::transfer(game, defending_player_address);
+    //     event::emit(TurnEnded{player: tx_context::sender(ctx)});
+    // }
 
     public entry fun surrender(game: Game, ctx: &mut TxContext) {
-        end_game(game, ctx);
+        let (_, defending_player) = get_players(&mut game, ctx);
+        let defending_player_address = defending_player.addr;
+        end_game(game, defending_player_address);
     }
 
     // return players in order of attacking, defending
@@ -322,21 +357,114 @@ module card_game::card_game {
     /// Private Functions ///
     /////////////////////////
 
-    fun end_game(game: Game, ctx: &mut TxContext) {
-        let (attacking_player, defending_player) = get_players(&mut game, ctx);
-        
+    fun end_game(game: Game, winner: address) {
         event::emit(GameOver{
             id: object::uid_to_inner(&game.id),
-            winner: attacking_player.addr,
-            loser: defending_player.addr,
+            winner: winner
         });
-        
+       
         let Game{
-            id,
-            player_1: _,
-            player_2: _,
+            id: game_id,
+            player_1: player_1,
+            player_2: player_2,
         } = game;
 
-        object::delete(id);
+        let Player{
+            id: player_1_id,
+            addr: _,
+            deck_commitment: _,
+            deck_size: _,
+            hand_commitment: _,
+            hand_size: _,
+            graveyard: player_1_graveyard,
+            board: player_1_board,
+            life: _,
+        } = player_1;
+
+        let Player{
+            id: player_2_id,
+            addr: _,
+            deck_commitment: _,
+            deck_size: _,
+            hand_commitment: _,
+            hand_size: _,
+            graveyard: player_2_graveyard,
+            board: player_2_board,
+            life: _,
+        } = player_2;
+
+        let i = 0;
+        while(i < vector::length<Card>(&player_1_graveyard)){
+            let card = vector::pop_back<Card>(&mut player_1_graveyard);
+            let Card{
+                id: card_id,
+                name: _,
+                description: _,
+                type: Character{
+                    attack: _,
+                    defense: _,
+                },
+                image_url: _,
+            } = card;
+            object::delete(card_id);
+            i = i + 1;
+        };
+
+        vector::destroy_empty(player_1_graveyard);
+        i = 0;
+        while(i < vector::length<Card>(&player_2_graveyard)){
+            let card = vector::pop_back<Card>(&mut player_2_graveyard);
+            let Card{
+                id: card_id,
+                name: _,
+                description: _,
+                type: Character{
+                    attack: _,
+                    defense: _,
+                },
+                image_url: _,
+            } = card;
+            object::delete(card_id);
+            i = i + 1;
+        };
+        vector::destroy_empty(player_2_graveyard);
+        i = 0;
+        while(i < vector::length<Card>(&player_1_board)){
+            let card = vector::pop_back<Card>(&mut player_1_board);
+            let Card{
+                id: card_id,
+                name: _,
+                description: _,
+                type: Character{
+                    attack: _,
+                    defense: _,
+                },
+                image_url: _,
+            } = card;
+            object::delete(card_id);
+            i = i + 1;
+        };
+        vector::destroy_empty(player_1_board);
+        i = 0;
+        while(i < vector::length<Card>(&player_2_board)){
+            let card = vector::pop_back<Card>(&mut player_2_board);
+            let Card{
+                id: card_id,
+                name: _,
+                description: _,
+                type: Character{
+                    attack: _,
+                    defense: _,
+                },
+                image_url: _,
+            } = card;
+            object::delete(card_id);
+            i = i + 1;
+        };
+        vector::destroy_empty(player_2_board);
+
+        object::delete(player_1_id);
+        object::delete(player_2_id);
+        object::delete(game_id);
     } 
 }
