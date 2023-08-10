@@ -16,11 +16,11 @@ template Draw(nHandInputs, nDeckInputs) {
     // Public Inputs
     signal input handSaltHash;
     signal input hand_card_id_hashes[nHandInputs];
-    signal input handCommittment;
+    signal input handCommittment; // hash of hand card ids and handSalt
 
     signal input deckSaltHash;
     signal input deck_card_id_hashes[nDeckInputs];
-    signal input deckCommittment;
+    signal input deckCommittment; // hash of deck card ids and deckSalt
     
     component handHash[nHandInputs];
     component handCommittmentHasher = Poseidon(nHandInputs);
