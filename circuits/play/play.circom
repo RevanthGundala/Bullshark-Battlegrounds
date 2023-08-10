@@ -65,7 +65,7 @@ template Play(nHandInputs, nDeckInputs) {
         }
     }
 
-    // assert that the handCommittment lines up with the hash provided
+    // assert that the handCommittment and deckCommittment lines up with the hash provided
    handCommittmentHasher.out === handCommittment;
    deckCommittmentHasher.out === deckCommittment;
 

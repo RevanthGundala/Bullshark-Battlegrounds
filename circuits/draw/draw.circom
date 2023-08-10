@@ -34,11 +34,12 @@ template Draw(nHandInputs, nDeckInputs) {
     handSaltHasher.inputs[0] <== handSalt;
     handSaltHasher.out === handSaltHash;
 
+    // repeat with deck
     deckSaltHasher.inputs[0] <== deckSalt;
     deckSaltHasher.out === deckSaltHash;
 
-    // assert that each pub hash id is equal to secret input id 
-    // Ensures that the cards are the same and we did not secretly swap out a card
+    // assert that each pub hash id is equal to the hash of the secret input id 
+    // Ensures that the cards and deck are the same and we did not secretly swap out a card
     for(var i = 0; i < nHandInputs; i++){
         handHash[i] = Poseidon(1);
         handHash[i].inputs[0] <== hand_card_ids[i];
@@ -65,11 +66,11 @@ template Draw(nHandInputs, nDeckInputs) {
         }
     }
 
-    // assert that the handCommittment lines up with the hash provided
+    // assert that the handCommittment and deckCommittment lines up with the hash provided
    handCommittmentHasher.out === handCommittment;
    deckCommittmentHasher.out === deckCommittment;
 
-    // ensures that card id that we are drawing is the same as the one we are playing
+    // ensures that card id that we are drawing isn't being swapped for another card id
    signal card_id_drawn_squared;
    card_id_drawn_squared <== card_id_drawn * card_id_drawn;
 }
