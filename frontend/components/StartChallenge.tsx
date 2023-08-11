@@ -9,36 +9,36 @@ export default function StartChallenge() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [opponent, setOpponent] = useState("");
 
-    const start_challenge = useCallback(async () => {
-        if (!wallet) return
+    // const start_challenge = useCallback(async () => {
+    //     if (!wallet) return
     
-        try {
-          setIsLoading(true);
-          const transactionBlock = new TransactionBlock();
-          const tx = transactionBlock.moveCall({
-            target: `${MODULE_ADDRESS}::card_game::challenge_person`,
-            arguments: [
-              transactionBlock.pure(opponent, "address"),
-            ]
-          });
+    //     try {
+    //       setIsLoading(true);
+    //       const transactionBlock = new TransactionBlock();
+    //       const tx = transactionBlock.moveCall({
+    //         target: `${MODULE_ADDRESS}::card_game::challenge_person`,
+    //         arguments: [
+    //           transactionBlock.pure(opponent, "address"),
+    //         ]
+    //       });
     
-          const response = await wallet.signAndExecuteTransactionBlock({
-            transactionBlock,
-            options: {
-              showInput: true,
-              showEffects: true,
-              showEvents: true,
-              showBalanceChanges: true,
-              showObjectChanges: true,
-            }
-          });
+    //       const response = await wallet.signAndExecuteTransactionBlock({
+    //         transactionBlock,
+    //         options: {
+    //           showInput: true,
+    //           showEffects: true,
+    //           showEvents: true,
+    //           showBalanceChanges: true,
+    //           showObjectChanges: true,
+    //         }
+    //       });
     
-          console.log("Transaction Response", response)
-          setIsLoading(false);
-        } catch (error) {
-          console.log(error)
-        }
-      }, [wallet])
+    //       console.log("Transaction Response", response)
+    //       setIsLoading(false);
+    //     } catch (error) {
+    //       console.log(error)
+    //     }
+    //   }, [wallet])
 
     return (
         <>

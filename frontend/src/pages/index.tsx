@@ -7,7 +7,6 @@ import StartChallenge from "../../components/StartChallenge";
 
 
 export default function Home() {
-  
   return (
     <>
       <Navbar />
@@ -24,8 +23,8 @@ export default function Home() {
         <Text mt={2} fontSize="2xl">
         Dive into strategic depths as players collide in the fierce currents of the Bullshark Battlegrounds
         </Text>
-        {/* <Challenges /> */}
         <StartChallenge />
+        <Challenges />
       </Box>
       </Box>
     </>
