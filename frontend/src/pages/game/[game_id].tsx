@@ -10,6 +10,10 @@ export default function GamePage() {
     const [isDisabled, setIsDisabled] = useState(true);
     const [turn, setTurn] = useState(false);
     const router = useRouter();
+
+    const {nfts} = wallet?.contents;
+
+  // check who owns the game id
     
     const surrender = useCallback(async () => {
         if (!wallet) return
@@ -181,6 +185,9 @@ export default function GamePage() {
         }
         else{
             setIsDisabled(true);
+            // check for turn update
+            // nft.contains(objectid)
+            setTurn(true);
         }
       }, [])
     return (

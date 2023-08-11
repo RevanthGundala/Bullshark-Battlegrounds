@@ -4,7 +4,6 @@ import Navbar from "../../components/Navbar";
 import Challenges from "../../components/Challenges";
 import {ethos, EthosConnectStatus, TransactionBlock} from "ethos-connect";
 import {MODULE_ADDRESS} from "../../constants/index";
-import Kiosk from "../../components/Kiosk";
 
 export default function Mint() {
     const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +54,6 @@ export default function Mint() {
             <Button colorScheme="blue" isLoading={isLoading} onClick={mint}>
                 Generate card
             </Button>
-            <Kiosk />
           </Box>
         </>
       );
