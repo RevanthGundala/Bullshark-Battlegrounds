@@ -1,6 +1,6 @@
 pragma circom 2.1.4;
 
-include "../circomlib/poseidon.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
 
 // can be used to draw a card
 template Draw(nHandInputs, nDeckInputs) {
@@ -14,6 +14,7 @@ template Draw(nHandInputs, nDeckInputs) {
     signal input card_id_drawn;
     
     // Public Inputs
+    
     signal input handSaltHash;
     signal input hand_card_id_hashes[nHandInputs];
     signal input handCommittment; // hash of hand card ids and handSalt
@@ -76,5 +77,5 @@ template Draw(nHandInputs, nDeckInputs) {
 }
 
 // number of cards in hand
-component main { public [ handSaltHash, hand_card_id_hashes, handCommittment, deckSaltHash, deck_card_id_hashes, deckCommittment] } = Draw(6, 12);
+component main { public [ handSaltHash, hand_card_id_hashes, handCommittment, deckSaltHash, deck_card_id_hashes, deckCommittment] } = Draw(1, 1);
 

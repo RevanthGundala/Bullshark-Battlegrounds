@@ -14,6 +14,11 @@ export default function Navbar() {
             Home
           </Link>
         </Box>
+        <Box flex={2}>
+          <Link as={NextLink} href="/mint" fontSize="2xl" fontWeight="bold" marginLeft="2rem">
+            Get Cards
+          </Link>
+        </Box>
         <Box flex={1} textAlign="right" marginRight="2rem">
         {status === EthosConnectStatus.Loading ? (
         <div>Loading...</div>

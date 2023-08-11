@@ -1,6 +1,6 @@
 pragma circom 2.1.4;
 
-include "../circomlib/poseidon.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
 
 // can be used to play or discard a card
 template Play(nHandInputs, nDeckInputs) {
