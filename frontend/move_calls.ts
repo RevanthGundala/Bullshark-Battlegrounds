@@ -239,14 +239,18 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
   }
 
 export const attack = async (
-    wallet: Wallet,
+    wallet: Wallet | undefined,
     game_id: string,
-    attacking_characters: string[],
-    defending_characters: string[],
+    attacking_character_indices: number[],
+    defending_character_indices: number[],
     direct_player_attacks: number[],
     ) => {
     if (!wallet) return
     try {
+        // get the card ids of the attacking characters on board
+        // based on index
+        let attacking_card_ids = get_card_id_of_attacking_characters(attacking_character_indices);
+        
       let transactionBlock = new TransactionBlock();
         let tx = transactionBlock.moveCall({
             target: `${MODULE_ADDRESS}::card_game::attack`,
@@ -257,7 +261,7 @@ export const attack = async (
                 transactionBlock.pure(direct_player_attacks)
             ]
         });
-        let response = await wallet.signAndExecuteTransactionBlock({
+        let response = await wallet?.signAndExecuteTransactionBlock({
             transactionBlock,
             options: {
               showInput: true,
@@ -271,7 +275,13 @@ export const attack = async (
     } catch (error) {
       console.log(error)
     }
-  }
+}
+
+export const get_card_id_of_character = async(attacking_character_indices: number[]) => {
+    const response = await fetch(
+
+    )
+}
 
 export const end_turn = async (
     wallet: Wallet | undefined,
@@ -355,7 +365,9 @@ export const generate_discard_proof_with_rust = async () => {
 }
 
 
-export const get_object_ids = async (wallet: Wallet | undefined, object_name: string): Promise<string[][]> => {
+export const get_object_ids = async (
+    wallet: Wallet | undefined, 
+    object_name: string): Promise<string[][]> => {
     try{
         const response = await fetch(
             `https://api.shinami.com/node/v1/${process.env.NEXT_PUBLIC_ACCESS_TOKEN}`, {
@@ -372,7 +384,7 @@ export const get_object_ids = async (wallet: Wallet | undefined, object_name: st
                             "filter": {
                                 "MatchAll": [
                                     {
-                                        "StructType": `${MODULE_ADDRESS}::card_game::${object_name}}`
+                                        "StructType": `${MODULE_ADDRESS}::card_game::${object_name}`
                                     }
                                 ]
                             }
@@ -383,12 +395,10 @@ export const get_object_ids = async (wallet: Wallet | undefined, object_name: st
             }
         );
         const data = await response.json();
-        const tempChallenges = data.result.data.map((item: { data: { objectId: string } }) => item.data.objectId);
-        const tempChallengers = await Promise.all(
+        const tempChallenges: string[] = data.result.data.map((item: { data: { objectId: string } }) => item.data.objectId);
+        const tempChallengers: string[] = await Promise.all(
             tempChallenges.map((id: string) => get_objects_from_id(wallet, id, object_name))
         );
-    
-        console.log(tempChallengers);
         return[tempChallenges, tempChallengers];
     } catch (error) {
         console.log(error);
@@ -426,7 +436,7 @@ export const get_objects_from_id = async (wallet: Wallet | undefined,
             }
         );
         const data = (await response.json()).result.data.content.fields;
-        return object_name === "challenger" ? data.challenger : data.game;
+        return object_name === "Challenge" ? data.challenger : data.game;
     } catch (error) {
         console.log(error);
     }

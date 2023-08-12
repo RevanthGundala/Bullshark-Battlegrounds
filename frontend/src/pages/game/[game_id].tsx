@@ -10,6 +10,7 @@ export default function GamePage() {
     const [isDisabled, setIsDisabled] = useState(true);
     const [turn, setTurn] = useState(false);
     const [handSize, setHandSize] = useState(0);
+    const [directPlayerAttacks, setDirectPlayerAttacks] = useState<number[]>([]);
     const router = useRouter(); 
 
     const fetchData = async () => {

@@ -12,18 +12,19 @@ export default function Challenges(){
     const [challenges, setChallenges] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const fetchData = async () => {
-        try {
-          let [tempChallenges, tempChallengers]: string[][] = await get_object_ids(wallet, "Challenges");
-          // Now you can use tempChallenges and tempChallengers in your component's state or other logic
-          setChallenges(tempChallenges);
-          setChallengers(tempChallengers);
-        } catch (error) {
-          console.log(error);
-        }
-      };
+    
     useEffect(() => {
-        fetchData();
+        const fetchData = async () => {
+            try {
+              let [tempChallenges, tempChallengers]: string[][] = await get_object_ids(wallet, "Challenge");
+              // Now you can use tempChallenges and tempChallengers in your component's state or other logic
+              setChallenges(tempChallenges);
+              setChallengers(tempChallengers);
+            } catch (error) {
+              console.log(error);
+            }
+          };
+          fetchData();
       }, []);
       
 
@@ -34,10 +35,10 @@ export default function Challenges(){
           </Text>
           <Box>
             <VStack spacing="20px">
-              {isLoading ? (
+              {isLoading || challenges === undefined ? (
                 <Spinner size="xl" />
               ) : (
-                challenges.map((challenge, index) => (
+                challenges?.map((challenge, index) => (
                   <NextLink key={index} href={`/game/${challenge}`} passHref>
                     <Link
                       width="200%"
