@@ -215,10 +215,12 @@ module card_game::card_game {
         public_inputs_bytes: vector<u8>, 
         proof_points_bytes: vector<u8>,
         card_to_play: Card,
+        new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
         let (attacking_player, _) = get_players(game, ctx);
         assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.board, card_to_play);
     }

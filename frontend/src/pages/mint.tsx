@@ -3,7 +3,7 @@ import { Text, Box, Button } from "@chakra-ui/react";
 import Navbar from "../../components/Navbar";
 import Challenges from "../../components/Challenges";
 import {ethos, EthosConnectStatus, TransactionBlock} from "ethos-connect";
-import {MODULE_ADDRESS} from "../../constants/index";
+import { get_new_character } from "../../move_calls";
 
 export default function Mint() {
     const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +44,7 @@ export default function Mint() {
     //     }
     //   }, [wallet])
 
+    // TODO: Generate random name + description
     return (
         <>
           <Navbar />
@@ -51,7 +52,10 @@ export default function Mint() {
             <Text fontSize="5xl" fontWeight="bold" mt={4}>
               Let's get you some cards to play with!
             </Text>
-            <Button colorScheme="blue" isLoading={isLoading} onClick={mint}>
+            <Button colorScheme="blue" isLoading={isLoading} onClick={() => 
+              get_new_character(
+                wallet, "Narwhal", "Test-NFT", "", 1, 1
+                )}>
                 Generate card
             </Button>
           </Box>

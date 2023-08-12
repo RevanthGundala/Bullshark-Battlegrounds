@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Box, Textarea, IconButton, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton } from "@chakra-ui/react";
 import {ethos, EthosConnectStatus, TransactionBlock} from "ethos-connect";
 import {MODULE_ADDRESS} from "../constants/index";
+import { challenge_person } from "../move_calls";
 
 export default function StartChallenge() {
     const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +63,10 @@ export default function StartChallenge() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" onClick={start_challenge} isLoading={isLoading}>
+            <Button colorScheme="blue" onClick={() => 
+              challenge_person(
+                wallet, opponent
+              )} isLoading={isLoading}>
               Challenge
             </Button>
           </ModalFooter>
