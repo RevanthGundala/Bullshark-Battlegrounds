@@ -493,11 +493,6 @@ module card_game::card_game {
     } 
 
     #[test]
-    public fun test_get_game(game: Game) {
-        assert!(get_game(&game) == game, 0);
-    }
-
-    #[test]
     public fun test_verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>) {
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), 0);
     }

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import {useState, useEffect, useCallback} from "react";
 import {ethos, TransactionBlock, SignInButton} from "ethos-connect";
 
-import { accept_challenge, draw } from "../calls/move_calls";
+import { accept_challenge, draw, get_game_struct } from "../calls/move_calls";
 import { get_object_ids } from "../calls/api_calls";
 
 export default function Challenges(){
@@ -14,11 +14,13 @@ export default function Challenges(){
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
+    console.log(wallet?.contents);
+    
     useEffect(() => {
         const fetchData = async () => {
             try {
               // fetch challenges
-                setIsLoading(true);
+              setIsLoading(true);
               let [tempChallenges, tempChallengers]: string[][] = await get_object_ids(wallet, "Challenge");
               // Now you can use tempChallenges and tempChallengers in your component's state or other logic
               setChallenges(tempChallenges);
@@ -26,7 +28,6 @@ export default function Challenges(){
             
               // check if we own a game object
               // todo: make it so we cant have multiple obj
-              console.log("getting game object");
               let data = await get_object_ids(wallet, "Game");
               /*
               if(data[0].length > 0){
@@ -43,7 +44,6 @@ export default function Challenges(){
       
 
     return (
-        
         <Box textAlign="center">
           <Text fontSize="4xl" fontWeight="bold" mt={4}>
             Challenges
@@ -57,7 +57,11 @@ export default function Challenges(){
               ) : (
                 <Box>
                 {challenges.map((challenge, index) => (
-                      <Box key={index} onClick={() => accept_challenge(wallet, challenge)}>
+                      <Box key={index} onClick={
+                        async () => {
+                          let game_id = await accept_challenge(wallet, challenge);
+                          router.push("/game/" + game_id);
+                      }}>
                         Challenger: {ethos.truncateMiddle(challengers[index], 4)}
                         <br />
                       </Box>

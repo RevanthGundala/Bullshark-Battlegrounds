@@ -1,142 +1,141 @@
-import { get_object_from_id } from "./api_calls";
-// TODO: Create a function that queries user's cards
-export const cardObjectDefinitions = [
-    {id: 1, image_path: "/images/cards/1.png"},
-];
+import { 
+    Connection, 
+    JsonRpcProvider, 
+    TransactionBlock,
+    SuiTransactionBlockResponse,
+    ExecuteTransactionRequestType
+  } from "@mysten/sui.js";
+import { rpcClient } from "typed-rpc";
+import {Wallet } from "ethos-connect";
+import { get_new_character } from "./move_calls";
+import { MAX_HAND_SIZE, STARTING_DECK_SIZE, TOTAL_DECK_SIZE } from "../constants";
+// start a new session with shinami key 
 
-const cardBackImgPath = "/images/cards/back.jpeg";
+// The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
+const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
 
-let cards: any[] = [];
+// The Wallet Service is the endpoint to issue calls on behalf of the wallet.
+const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
 
+// Shinami Sui Node endpoint + Mysten provided faucet endpoint:
+const connection = new Connection({
+fullnode: `https://api.shinami.com/node/v1/${process.env.NEXT_PUBLIC_ACCESS_TOKEN}`,
+});
 
-export function create_game(){
-    cards = document.querySelectorAll(".card");
+const suiProvider = new JsonRpcProvider(connection);
+const GAS_BUDGET = 5000000;
 
+// Key Service interaction setup
+interface KeyServiceRpc {
+    shinami_key_createSession(secret: string): string;
+}
+const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
+    getHeaders() {
+        return {
+            "X-API-Key": process.env.NEXT_PUBLIC_ACCESS_TOKEN
+        };
+    },
+});
+
+// Wallet Service interaction setup
+interface WalletServiceRpc {
+    shinami_wal_createWallet(walletId: string, sessionToken: string): string;
+    shinami_wal_getWallet(walletId: string): string;
+    shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
+        SignTransactionResult;
+    shinami_wal_executeGaslessTransactionBlock(
+        walletId: string, 
+        sessionToken: string, 
+        txBytes: string, 
+        gasBudget: number, 
+        options?: {}, 
+        requestType?: ExecuteTransactionRequestType
+    ): SuiTransactionBlockResponse;
 }
 
-function createCards()
-{
-    cardObjectDefinitions.forEach((cardItem)=>{
-        createCard(cardItem)
-    })
+interface SignTransactionResult {
+    signature: string;
+    txDigest: string;
 }
 
+const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
+    getHeaders() {
+        return {
+            "X-API-Key": "<API_ACCESS_KEY>"
+        };
+    },
+});
 
-function createCard(cardItem: any){
-    //create div elements that make up a card
-    const cardElem = document.createElement('div')
-    const cardInnerElem = document.createElement('div')
-    const cardFrontElem = document.createElement('div')
-    const cardBackElem = document.createElement('div')
+export const get_new_character_gasless = 
+async(wallet: Wallet,
+     name: string,
+    description: string,
+    image_url: string,
+    attack: number,
+    defense: number,
+    ) => {
+    // Create an ephemeral session token to access Invisible Wallet functionality
+    // TODO: Change in futre for security
+    const secret = "test";
+    const sessionToken = await keyService.shinami_key_createSession(secret);
 
-    //create front and back image elements for a card
-    const cardFrontImg = document.createElement('img')
-    const cardBackImg = document.createElement('img')
+    // Create a new wallet (can only be done once with the same walletId). Make
+    // sure to transfer Sui coins to your wallet before trying to run the
+    // following transactions
+    const walletId = wallet.address;
+    const createdWalletAddress = await walletService.shinami_wal_createWallet(walletId, sessionToken);
 
-    //add class and id to card element
-    addClassToElement(cardElem, 'card')
-    addClassToElement(cardElem, 'fly-in')
-    addIdToElement(cardElem, cardItem.id)
-
-    //add class to inner card element
-    addClassToElement(cardInnerElem, 'card-inner')
+    // Retrieve the wallet address via the walletId. Should be the same as createdWalletAddress
+    const walletAddress = await walletService.shinami_wal_getWallet(walletId);
     
-    //add class to front card element
-    addClassToElement(cardFrontElem, 'card-front')
+        // Get the transaction block of the gasless transaction
+        const txbGasless = await get_new_character(wallet, name, description, image_url, attack, defense);
+        if(txbGasless == null){
+            console.log("Error: txbGasless is null");
+            return;
+        }
+        // Generate the bcs serialized transaction payload
+        const payloadBytesGasless = await txbGasless.build({ provider: suiProvider, onlyTransactionKind: true });
+    
+        // Convert the payload byte array to a base64 encoded string
+        const payloadBytesGaslessBase64 = btoa(
+            payloadBytesGasless.reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+    
+        // Sponsor and execute the transaction with one call
+        const executeResponseGasless = await walletService.shinami_wal_executeGaslessTransactionBlock(
+            walletId,
+            sessionToken,
+            payloadBytesGaslessBase64,
+            GAS_BUDGET,
+            {
+                showInput: false,
+                showRawInput: false,
+                showEffects: true,
+                showEvents: false,
+                showObjectChanges: false,
+                showBalanceChanges: false
+            },
+            "WaitForLocalExecution"
+        );
+        console.log("Execution Status:", executeResponseGasless.effects?.status.status);
+}    
 
-    //add class to back card element
-    addClassToElement(cardBackElem, 'card-back')
 
-    //add src attribute and appropriate value to img element - back of card
-    addSrcToImageElem(cardBackImg, cardBackImgPath)
+export const create_game = async(accepter: Wallet, opponent: Wallet) => {
+    // when someone calls create_game, I know that p2 is the accepter, and p1 owns the object
+    localStorage.setItem("player_1", opponent.address);
+    localStorage.setItem("player_2", accepter.address);
 
-    //add src attribute and appropriate value to img element - front of card
-    addSrcToImageElem(cardFrontImg, cardItem.imagePath)
+    // generate random cards from player 1 and 2 for thier hand
+    let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
 
-    //assign class to back image element of back of card
-    addClassToElement(cardBackImg, 'card-img')
-   
-    //assign class to front image element of front of card
-    addClassToElement(cardFrontImg, 'card-img')
-
-    //add front image element as child element to front card element
-    addChildElement(cardFrontElem, cardFrontImg)
-
-    //add back image element as child element to back card element
-    addChildElement(cardBackElem, cardBackImg)
-
-    //add front card element as child element to inner card element
-    addChildElement(cardInnerElem, cardFrontElem)
-
-    //add back card element as child element to inner card element
-    addChildElement(cardInnerElem, cardBackElem)
-
-    //add inner card element as child element to card element
-    addChildElement(cardElem, cardInnerElem)
-
-    //add card element as child element to appropriate grid cell
-    addCardToGridCell(cardElem)
-
-    initializeCardPositions(cardElem)
-
-    attatchClickEventHandlerToCard(cardElem)
-
-}
-
-function addClassToElement(elem: any, className: any){
-    elem.classList.add(className)
-}
-function addIdToElement(elem: any, id: any){
-    elem.id = id
-}
-function addSrcToImageElem(imgElem, src){
-    imgElem.src = src
-}
-function addChildElement(parentElem, childElem){
-    parentElem.appendChild(childElem)
-}
-function addCardToGridCell(card)
-{
-    const cardPositionClassName = mapCardIdToGridCell(card)
-
-    const cardPosElem = document.querySelector(cardPositionClassName)
-
-    addChildElement(cardPosElem, card)
-
-}
-function mapCardIdToGridCell(card){
-   
-    if(card.id == 1)
-    {
-        return '.card-pos-a'
-    }
-    else if(card.id == 2)
-    {
-        return '.card-pos-b'
-    }
-    else if(card.id == 3)
-    {
-        return '.card-pos-c'
-    }
-    else if(card.id == 4)
-    {
-        return '.card-pos-d'
-    }
-}
-
-export function start_game(){
-    initalize_new_game();
-    start_round();
-}
-
-function initialize_card_positions(){
 
 }
 
-export function initalize_new_game(){
 
-}
+// Once i have game struct, I can view p1 and p2 addressses
+// turn is determined on whether p1 has game struct, or p2 has game struct
 
-export function start_round(){
-
-}
+// my state should contain p1 and p2.
+// when create_game is called, set localstorage for p1 and p2

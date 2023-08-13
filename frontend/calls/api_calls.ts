@@ -32,10 +32,6 @@ export const get_object_ids = async (
             }
         );
         const data = await response.json();
-        if(object_name === "Game"){
-            console.log(data);
-            console.log("dataresult: +" , data?.result);
-        }
         const tempChallenges: string[] = data?.result?.data?.map((item: { data: { objectId: string } }) => item.data.objectId);
         const tempChallengers: string[] = await Promise.all(
             tempChallenges.map((id: string) => get_object_from_id(wallet, id, object_name))
@@ -78,7 +74,6 @@ export const get_object_from_id = async (
             }
         );
         const data = (await response.json()).result.data.content.fields;
-        console.log(data);
         return object_name === "Challenge" ? data.challenger : data.game;
     } catch (error) {
         console.log(error);

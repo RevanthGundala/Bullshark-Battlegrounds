@@ -12,10 +12,14 @@ export default function GamePage() {
     const [isDisabled, setIsDisabled] = useState(true);
     const [turn, setTurn] = useState(false);
     const [directPlayerAttacks, setDirectPlayerAttacks] = useState<number[]>([]);
-    const [attacking_player_hand_size, setAttacking_player_hand_size] = useState(0);
-    const [attacking_player_deck_size, setAttacking_player_deck_size] = useState(0);
-    const [defending_player_hand_size, setDefending_player_hand_size] = useState(STARTING_DECK_SIZE);
-    const [defending_player_deck_size, setDefending_player_deck_size] = useState(STARTING_DECK_SIZE);
+    const [player_1_hand_size, setPlayer_1_hand_size] = useState(6);
+    const [player_1_deck_size, setPlayer_1_deck_size] = useState(6);
+    const [player_2_hand_size, setPlayer_2_hand_size] = useState(STARTING_DECK_SIZE);
+    const [player_2_deck_size, setPlayer_2_deck_size] = useState(STARTING_DECK_SIZE);
+    const [player_1_hand, setPlayer_1_hand] = useState<string[]>([]);
+    const [player_2_hand, setPlayer_2_hand] = useState<string[]>([])
+    const [player_1_board, setPlayer_1_board] = useState([]);
+    const [player_2_board, setPlayer_2_board] = useState([])
     const router = useRouter(); 
 
     const fetchData = async () => {
@@ -29,17 +33,23 @@ export default function GamePage() {
       console.log(turn);
     }
     async function checkTurn(){
+      setIsLoading(true);
       // check if you own the game, else its not turn
-      let x = await get_object_ids(wallet, "Game");
+      let x = await get_object_ids(wallet, "Game")
 
         if(turn){
-          let [attacking_player_hand_size, attacking_player_deck_size, 
-            defending_player_hand_size, defending_player_deck_size] = await draw(wallet, router.query.game_id as string);
+          let [player_1_hand_size, player_1_deck_size, 
+            player_2_hand_size, player_2_deck_size] = await draw(wallet, router.query.game_id as string);
           // setHandSize(hand_size);
           // setDeckSize(deck_size);
-          if(handSize > MAX_HAND_SIZE){
+          if(player_1_hand_size > MAX_HAND_SIZE){
             await discard(wallet, router.query.game_id as string, "");
           }
+
+          // select card to play
+
+
+
           setIsDisabled(false);
           setTurn(false);
       }
@@ -50,16 +60,60 @@ export default function GamePage() {
           await fetchData();
           setTurn(true);
       }
+      setIsLoading(false);
     }
 
       useEffect(() => {
-        checkTurn();
+        setplayer_1_hand(JSON.parse(localStorage.getItem("player_hand") || "[]"));
       }, [])
+
+      useEffect(() => {
+        checkTurn();
+      }, [turn])
+
     return (
       <>
-          <h1 className="text-3xl font-bold">
-            Game Page
-        </h1>
+        {
+          localStorage.getItem("player_1") == wallet?.address ? (
+
+          ) : (
+
+          )
+
+        }
+        
+          <Box>
+          {player_1_deck_size > 0 ? (
+          <Image src="/images/cards/back.jpeg" 
+          alt="your-deck" 
+          height="200px"/>
+        ) : (
+          <Image></Image>
+        )}
+        {player_2_deck_size > 0 ? (
+          <Image src="/images/cards/back.jpeg" 
+          alt="enemy-deck" 
+          height="200px"/>
+        ) : (
+          <Image></Image>
+        )}
+        <Box>
+        <Button 
+            colorScheme='yellow' isLoading={isLoading} onClick={() => 
+              end_turn(wallet, router.query.game_id as string)} 
+              disabled={isDisabled}>
+                End Turn
+        </Button>
+        <Button colorScheme="red" isLoading={isLoading} 
+            onClick={() => {
+              surrender(wallet, router.query.game_id as string);
+              router.push("/");
+            }}>
+                Surrender
+        </Button>
+
+        </Box>
+          </Box>
       </>
     );
 }

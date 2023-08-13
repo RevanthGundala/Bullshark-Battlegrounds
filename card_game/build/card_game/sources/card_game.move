@@ -373,7 +373,7 @@ module card_game::card_game {
         is_verified
     }
 
-    public fun get_game(game: Game): Game {
+    public fun get_game(game: &Game): &Game {
         game
     }
 
@@ -491,7 +491,6 @@ module card_game::card_game {
         object::delete(player_2_id);
         object::delete(game_id);
     } 
-
 
     #[test]
     public fun test_verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>) {

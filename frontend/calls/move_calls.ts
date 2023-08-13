@@ -1,7 +1,8 @@
 import { TransactionBlock, Wallet } from "ethos-connect";
-import { MODULE_ADDRESS, MAX_HAND_SIZE } from "../constants";
+import { MODULE_ADDRESS, MAX_HAND_SIZE, TOTAL_DECK_SIZE } from "../constants";
 import { get_object_ids, listen_for_events } from "./api_calls";
 import { create_game } from "./functions";
+import { NextRouter } from "next/router";
 
 export type Proof = {
     public_inputs_bytes: string | undefined,
@@ -28,17 +29,18 @@ export const get_new_character = async (
           transactionBlock.pure(attack),
           transactionBlock.pure(defense),
         ]});
-      const response = await wallet.signAndExecuteTransactionBlock({
-        transactionBlock,
-        options: {
-          showInput: true,
-          showEffects: true,
-          showEvents: true,
-          showBalanceChanges: true,
-          showObjectChanges: true,
-        }
-      });
-      console.log("Get New Character Response", response)
+        return transactionBlock;
+      // const response = await wallet.signAndExecuteTransactionBlock({
+      //   transactionBlock,
+      //   options: {
+      //     showInput: true,
+      //     showEffects: true,
+      //     showEvents: true,
+      //     showBalanceChanges: true,
+      //     showObjectChanges: true,
+      //   }
+      // });
+      // console.log("Get New Character Response", response)
     } catch (error) {
       console.log(error)
     }
@@ -94,10 +96,10 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
         if ("objectId" in change) {
           objectId = change.objectId;
           // Use objectId as needed
-          console.log("Object ID:", objectId);
+          console.log("Object ID ", objectId);
         }
       });
-      create_game();
+      return objectId;
     } catch (error) {
       console.log(error)
     }
@@ -358,6 +360,31 @@ export const surrender = async (wallet: Wallet | undefined, game_id: string) => 
     } catch (error) {
       console.log(error)
     }
+}
+
+export const get_game_struct = async (wallet: Wallet | undefined, game_id: string) => {
+  try {
+    const transactionBlock = new TransactionBlock();
+    const [game] = transactionBlock.moveCall({
+      target: `${MODULE_ADDRESS}::card_game::get_game`,
+      arguments: [
+        transactionBlock.object(game_id),
+      ]
+    });
+    const response = await wallet?.signAndExecuteTransactionBlock({
+      transactionBlock,
+      options: {
+        showInput: true,
+        showEffects: true,
+        showEvents: true,
+        showBalanceChanges: true,
+        showObjectChanges: true,
+      }
+    });
+    console.log("Game Response", response)
+  } catch (error) {
+      console.log(error)
+  }
 }
 
 export const generate_draw_proof_with_rust = async () => {

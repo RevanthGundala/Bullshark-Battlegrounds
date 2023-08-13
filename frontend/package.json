@@ -20,8 +20,10 @@
     "ethos-connect": "^0.0.180",
     "framer-motion": "^10.15.1",
     "next": "13.4.12",
+    "nft.storage": "^7.1.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "typed-rpc": "^4.0.0",
     "typescript": "5.1.6"
   },
   "devDependencies": {
