@@ -1,5 +1,5 @@
-export const MODULE_ADDRESS = "0x6ed9620e8d6e49791ecbec7314198c7de0715fb0056e6e85a09ab0fc19e959d2";
+export const MODULE_ADDRESS = "0xf4798d32ead460fdaad143a8b953e76b1832b7806e2509ea87ba9e34b322201e";
 export const MAX_HAND_SIZE = 6;
-// TODO: Cache these items in local storage
-export const GAME_ID = "";
+export const STARTING_DECK_SIZE = 12;
+
 

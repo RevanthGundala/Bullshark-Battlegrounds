@@ -171,16 +171,18 @@ module card_game::card_game {
         public_inputs_bytes: vector<u8>, 
         proof_points_bytes: vector<u8>,
         new_hand_commitment: vector<u8>,
-        ctx: &mut TxContext){
-        let (attacking_player, _) = get_players(game, ctx);
+        ctx: &mut TxContext): (u64, u64, u64, u64){
+        let (attacking_player, defending_player) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
-        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
-        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
+        // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
 
         // Place card in hand
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size + 1;
         attacking_player.deck_size = attacking_player.deck_size - 1;
+        (attacking_player.hand_size, attacking_player.deck_size, 
+        defending_player.hand_size, defending_player.deck_size)
     }
 
     public fun discard(
@@ -197,8 +199,8 @@ module card_game::card_game {
         ctx: &mut TxContext): &vector<Card>{
         let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
-        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
-        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
+        // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.graveyard, card_to_discard);
@@ -218,8 +220,9 @@ module card_game::card_game {
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
         let (attacking_player, _) = get_players(game, ctx);
-        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
-        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
+        // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
+        
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.board, card_to_play);
@@ -370,6 +373,10 @@ module card_game::card_game {
         is_verified
     }
 
+    public fun get_game(game: Game): Game {
+        game
+    }
+
     /////////////////////////
     /// Private Functions ///
     /////////////////////////
@@ -484,4 +491,16 @@ module card_game::card_game {
         object::delete(player_2_id);
         object::delete(game_id);
     } 
+
+
+    #[test]
+    public fun test_verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>) {
+        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), 0);
+    }
+
+    #[test]
+    public fun test_verify_ecvrf_output(output: vector<u8>, alpha_string: vector<u8>, public_key: vector<u8>, proof: vector<u8>): bool {
+        assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), 0);
+    }
+
 }

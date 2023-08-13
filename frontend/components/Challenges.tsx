@@ -1,25 +1,39 @@
 import { Box, Text, Flex, Link, VStack, Textarea, Spinner } from "@chakra-ui/react";
 import NextLink from "next/link";
+import { useRouter } from "next/router";
 import {useState, useEffect, useCallback} from "react";
 import {ethos, TransactionBlock, SignInButton} from "ethos-connect";
-import { MODULE_ADDRESS } from "../constants";
-import { accept_challenge, get_object_ids } from "../move_calls";
 
+import { accept_challenge, draw } from "../calls/move_calls";
+import { get_object_ids } from "../calls/api_calls";
 
 export default function Challenges(){
     const { wallet } = ethos.useWallet();
     const [challengers, setChallengers] = useState<string[]>([]);
     const [challenges, setChallenges] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
-    
     useEffect(() => {
         const fetchData = async () => {
             try {
+              // fetch challenges
+                setIsLoading(true);
               let [tempChallenges, tempChallengers]: string[][] = await get_object_ids(wallet, "Challenge");
               // Now you can use tempChallenges and tempChallengers in your component's state or other logic
               setChallenges(tempChallenges);
               setChallengers(tempChallengers);
+            
+              // check if we own a game object
+              // todo: make it so we cant have multiple obj
+              console.log("getting game object");
+              let data = await get_object_ids(wallet, "Game");
+              /*
+              if(data[0].length > 0){
+                router.push(`/game/${data[0][0]}`)
+              */
+
+              setIsLoading(false);
             } catch (error) {
               console.log(error);
             }
@@ -29,6 +43,7 @@ export default function Challenges(){
       
 
     return (
+        
         <Box textAlign="center">
           <Text fontSize="4xl" fontWeight="bold" mt={4}>
             Challenges
@@ -36,21 +51,18 @@ export default function Challenges(){
           <Box>
             <VStack spacing="20px">
               {isLoading || challenges === undefined ? (
-                <Spinner size="xl" />
+                <Spinner size="xl">
+                    <Text>Loading...</Text>
+                    </Spinner>
               ) : (
-                challenges?.map((challenge, index) => (
-                  <NextLink key={index} href={`/game/${challenge}`} passHref>
-                    <Link
-                      width="200%"
-                      minHeight="100px"
-                      onClick={() => accept_challenge(
-                        wallet, challenge
-                        )}
-                    >
-                      Challenger: {ethos.truncateMiddle(challengers[index], 4)}
-                    </Link>
-                  </NextLink>
-                ))
+                <Box>
+                {challenges.map((challenge, index) => (
+                      <Box key={index} onClick={() => accept_challenge(wallet, challenge)}>
+                        Challenger: {ethos.truncateMiddle(challengers[index], 4)}
+                        <br />
+                      </Box>
+                ))}
+              </Box>
               )}
             </VStack>
           </Box>

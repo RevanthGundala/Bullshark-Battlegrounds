@@ -1,45 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { Box, Textarea, IconButton, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton } from "@chakra-ui/react";
 import {ethos, EthosConnectStatus, TransactionBlock} from "ethos-connect";
-import {MODULE_ADDRESS} from "../constants/index";
-import { challenge_person } from "../move_calls";
+import { challenge_person } from "../calls/move_calls";
 
 export default function StartChallenge() {
     const [isLoading, setIsLoading] = useState(false);
     const {wallet} = ethos.useWallet();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [opponent, setOpponent] = useState("");
-
-    // const start_challenge = useCallback(async () => {
-    //     if (!wallet) return
-    
-    //     try {
-    //       setIsLoading(true);
-    //       const transactionBlock = new TransactionBlock();
-    //       const tx = transactionBlock.moveCall({
-    //         target: `${MODULE_ADDRESS}::card_game::challenge_person`,
-    //         arguments: [
-    //           transactionBlock.pure(opponent, "address"),
-    //         ]
-    //       });
-    
-    //       const response = await wallet.signAndExecuteTransactionBlock({
-    //         transactionBlock,
-    //         options: {
-    //           showInput: true,
-    //           showEffects: true,
-    //           showEvents: true,
-    //           showBalanceChanges: true,
-    //           showObjectChanges: true,
-    //         }
-    //       });
-    
-    //       console.log("Transaction Response", response)
-    //       setIsLoading(false);
-    //     } catch (error) {
-    //       console.log(error)
-    //     }
-    //   }, [wallet])
 
     return (
         <>
@@ -63,10 +31,10 @@ export default function StartChallenge() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" onClick={() => 
-              challenge_person(
-                wallet, opponent
-              )} isLoading={isLoading}>
+            <Button colorScheme="blue" onClick={() => {
+              challenge_person(wallet, opponent);
+              setIsModalOpen(false);
+            }} isLoading={isLoading}>
               Challenge
             </Button>
           </ModalFooter>

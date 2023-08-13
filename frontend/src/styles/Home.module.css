@@ -89,12 +89,7 @@ main{
 .card-img{
     height:100%;
 }
-.card-back{
-    transform: rotateY(180deg);
-}
-.card-inner.flip-it{
-    transform: rotateY(180deg);
-}
+
 header{
     display: flex;
     flex-direction: column;
@@ -210,6 +205,50 @@ header{
 .card.fly-in{
     transform: translateY(-1000px) translateX(-600px) rotate(45deg);
 }
+
+
+
+.enemy-hand{
+    grid-row: 1 / 3;
+    grid-column: 1 / 5;
+}
+
+:root {
+    --clr-dark: #0f172a;
+    --clr-light: #f1f5f9;
+    --clr-accent: #e11d48;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 5em 0 0 0;
+    padding: 0;
+    line-height: 1.6;
+    word-spacing: 1.4px;
+    font-family: 'Roboto', sans-serif;
+    color: var(--clr-dark);
+    background-color: var(--clr-light);
+  }
+  
+  .container {
+    width: 80%;
+    margin: 0 auto;
+    border: 10px solid var(--clr-dark);
+  }
+  
+  .item {
+    padding: 0.5em;
+    background-color: #fb7185;
+    font-weight: 700;
+    color: var(--clr-light);
+    border: 10px solid var(--clr-accent);
+  }
+  
 
 @media screen and (max-width:600px){
     .card{
