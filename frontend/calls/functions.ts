@@ -1,71 +1,65 @@
-import { 
-    Connection, 
-    JsonRpcProvider, 
-    TransactionBlock,
-    SuiTransactionBlockResponse,
-    ExecuteTransactionRequestType
-  } from "@mysten/sui.js";
-import { rpcClient } from "typed-rpc";
-import {Wallet } from "ethos-connect";
-import { get_new_character } from "./move_calls";
-import { MAX_HAND_SIZE, STARTING_DECK_SIZE, TOTAL_DECK_SIZE, Card } from "../constants";
-import { get_object_from_id } from "./api_calls";
-// start a new session with shinami key 
+// import { 
+//     Connection, 
+//     JsonRpcProvider, 
+//     TransactionBlock,
+//     SuiTransactionBlockResponse,
+//     ExecuteTransactionRequestType
+//   } from "@mysten/sui.js";
+// // import { rpcClient } from "typed-rpc";
+// import {Wallet } from "ethos-connect";
+// import { get_new_character } from "./move_calls";
+// import { MAX_HAND_SIZE, STARTING_DECK_SIZE, TOTAL_DECK_SIZE, Card } from "../constants";
+// import { get_object_from_id } from "./api_calls";
+// // start a new session with shinami key 
 
-// The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
-const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
+// // The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
+// const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
 
-// The Wallet Service is the endpoint to issue calls on behalf of the wallet.
-const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
+// // The Wallet Service is the endpoint to issue calls on behalf of the wallet.
+// const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
 
-// Shinami Sui Node endpoint + Mysten provided faucet endpoint:
-const connection = new Connection({
-fullnode: `https://api.shinami.com/node/v1/${process.env.NEXT_PUBLIC_ACCESS_TOKEN}`,
-});
+// // Shinami Sui Node endpoint + Mysten provided faucet endpoint:
+// const connection = new Connection({
+// fullnode: `https://api.shinami.com/node/v1/${process.env.NEXT_PUBLIC_ACCESS_TOKEN}`,
+// });
 
-const suiProvider = new JsonRpcProvider(connection);
-const GAS_BUDGET = 5000000;
+// const suiProvider = new JsonRpcProvider(connection);
+// const GAS_BUDGET = 5000000;
 
-// Key Service interaction setup
-interface KeyServiceRpc {
-    shinami_key_createSession(secret: string): string;
-}
-const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
-    getHeaders() {
-        return {
-            "X-API-Key": "<API_ACCESS_KEY>"
-        };
-    },
-});
+// // Key Service interaction setup
+// interface KeyServiceRpc {
+//     shinami_key_createSession(secret: string): string;
+// }
+// const keyService = rpcClient<KeyServiceRpc>(`KEY_SERVICE_RPC_URL${process.env.NEXT_PUBLIC_ACCESS_TOKEN}`);
 
-// Wallet Service interaction setup
-interface WalletServiceRpc {
-    shinami_wal_createWallet(walletId: string, sessionToken: string): string;
-    shinami_wal_getWallet(walletId: string): string;
-    shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
-        SignTransactionResult;
-    shinami_wal_executeGaslessTransactionBlock(
-        walletId: string, 
-        sessionToken: string, 
-        txBytes: string, 
-        gasBudget: number, 
-        options?: {}, 
-        requestType?: ExecuteTransactionRequestType
-    ): SuiTransactionBlockResponse;
-}
+// // Wallet Service interaction setup
+// interface WalletServiceRpc {
+//     shinami_wal_createWallet(walletId: string, sessionToken: string): string;
+//     shinami_wal_getWallet(walletId: string): string;
+//     shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
+//         SignTransactionResult;
+//     shinami_wal_executeGaslessTransactionBlock(
+//         walletId: string, 
+//         sessionToken: string, 
+//         txBytes: string, 
+//         gasBudget: number, 
+//         options?: {}, 
+//         requestType?: ExecuteTransactionRequestType
+//     ): SuiTransactionBlockResponse;
+// }
 
-interface SignTransactionResult {
-    signature: string;
-    txDigest: string;
-}
+// interface SignTransactionResult {
+//     signature: string;
+//     txDigest: string;
+// }
 
-const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
-    getHeaders() {
-        return {
-            "X-API-Key": "<API_ACCESS_KEY>"
-        };
-    },
-});
+// const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
+//     getHeaders() {
+//         return {
+//             "X-API-Key": "<API_ACCESS_KEY>"
+//         };
+//     },
+// });
 
 export const get_new_character_gasless = 
 async(wallet: Wallet,

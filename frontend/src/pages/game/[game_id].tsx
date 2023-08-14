@@ -11,6 +11,7 @@ export default function GamePage() {
 
     const [isDisabled, setIsDisabled] = useState(true);
     const [isAttacking, setisAttacking] = useState(false);
+    const [isWaitingForUser, setIsWaitingForUser] = useState(false);
     
     const [is_player_1, setIs_player_1] = useState(false);
     const [is_player_1_turn, setIs_player_1_turn] = useState(false);
@@ -25,6 +26,11 @@ export default function GamePage() {
     const [player_2_board, setPlayer_2_board] = useState<Card[]>([]);
 
     const [directPlayerAttacks, setDirectPlayerAttacks] = useState<number>(0);
+
+    const [selected_card_to_discard, setSelected_card_to_discard] = useState<Card | null>(null);
+    const [selected_card_to_play, setSelected_card_to_play] = useState<Card | null>(null);
+    const [selected_cards_to_attack, setSelected_cards_to_attack] = useState<Card[] | null>(null);
+    const [selected_cards_to_defend, setSelected_cards_to_defend] = useState<Card[] | null>(null);
 
     const router = useRouter(); 
 
@@ -45,6 +51,60 @@ export default function GamePage() {
        setPlayer_2_board(); // player2.board
     }
 
+    async function discard_card(){
+        setIsWaitingForUser(true);
+        if(selected_card_to_discard){
+          await discard(wallet, router.query.game_id as string, selected_card_to_discard.id || "1");
+          update_state_from_local_storage();
+          await update_board_state();
+        }
+        setIsWaitingForUser(false);
+    }
+
+    async function play_card(){
+        setIsWaitingForUser(true);
+        // todo: open modal and allow user to choose card to play
+        if(selected_card_to_play){
+          await play(wallet, router.query.game_id as string, selected_card_to_play.id || "1");
+          update_state_from_local_storage();
+          await update_board_state();
+        }
+        setIsWaitingForUser(false);
+    }
+
+    async function attack_opponent(){
+      setIsWaitingForUser(true);
+      if(is_player_1){
+          if(selected_cards_to_attack && selected_cards_to_defend){
+            let game_over = await attack(wallet, router.query.game_id as string, 
+              selected_cards_to_attack.map((character: Card) => character.id), // attacking character ids
+              selected_cards_to_defend.map((character: Card) => character.id),
+              directPlayerAttacks
+            );
+            await update_board_state();
+            if(game_over){
+              window.alert("You won!");
+              router.push("/");
+            }
+          }
+      }
+      else{
+        if(selected_cards_to_attack && selected_cards_to_defend){
+          let game_over = await attack(wallet, router.query.game_id as string, 
+            selected_cards_to_attack.map((character: Card) => character.id), // attacking character ids
+            selected_cards_to_defend.map((character: Card) => character.id),
+            directPlayerAttacks
+          );
+          await update_board_state();
+          if(game_over){
+            window.alert("You won!");
+            router.push("/");
+          }
+        }
+      }
+      setIsWaitingForUser(false);
+    }
+
     async function turn_logic(){
       setisAttacking(true);
       update_state_from_local_storage();
@@ -55,31 +115,14 @@ export default function GamePage() {
           await draw(wallet, router.query.game_id as string);
           update_state_from_local_storage();
           if(player_1_hand.length > MAX_HAND_SIZE){
-            // todo: open modal and allow user to choose card to discard
-            await discard(wallet, router.query.game_id as string, "1");
-            update_state_from_local_storage();
+            await discard_card();
           }
-          // todo: open modal and allow user to choose card to play
-          await play(wallet, router.query.game_id as string, "1");
-          update_state_from_local_storage();
-          await update_board_state();
-
-          // todo: open modal and allow user to make attacks on enemy board
-          // first map into id string, and then allow user to make choice
-          // before passing into func
-          let game_over = await attack(wallet, router.query.game_id as string, 
-            player_1_board.map((character: Card) => character.id), // attacking character ids
-            player_2_board.map((character: Card) => character.id),
-            directPlayerAttacks
-          );
-          await update_board_state();
-          if(game_over){
-            window.alert("You won!");
-            router.push("/");
-          }
+          await play_card();
+          await attack_opponent();
           setisAttacking(false);
         }
         else{
+          setIsDisabled(true);
           if(!isAttacking){
             await update_board_state();
             setIs_player_1_turn(false);
@@ -92,31 +135,14 @@ export default function GamePage() {
           await draw(wallet, router.query.game_id as string);
           update_state_from_local_storage();
           if(player_2_hand.length > MAX_HAND_SIZE){
-            // todo: open modal and allow user to choose card to discard
-            await discard(wallet, router.query.game_id as string, "1");
-            update_state_from_local_storage();
-          }
-          // todo: open modal and allow user to choose card to play
-          await play(wallet, router.query.game_id as string, "1");
-          update_state_from_local_storage();
-          await update_board_state();
-
-          // todo: open modal and allow user to make attacks on enemy board
-          // first map into id string, and then allow user to make choice
-          // before passing into func
-          let game_over = await attack(wallet, router.query.game_id as string, 
-            player_2_board.map((character: Card) => character.id), // attacking character ids
-            player_1_board.map((character: Card) => character.id),
-            directPlayerAttacks
-          );
-          await update_board_state();
-          if(game_over){
-            window.alert("You won!");
-            router.push("/");
-          }
+            await discard_card();
+          }         
+          await play_card();
+          await attack_opponent();
           setisAttacking(false);
         }
         else{
+          setIsDisabled(true);
           if(!isAttacking){
             await update_board_state();
             setIs_player_1_turn(true);
@@ -125,22 +151,79 @@ export default function GamePage() {
     }
   }
 
-    useEffect(() => {
-      const player1FromLocalStorage = localStorage.getItem("player_1");
-      setIs_player_1(
-        wallet?.address !== null &&
-        player1FromLocalStorage !== null &&
-        wallet?.address === JSON.parse(player1FromLocalStorage));
-      turn_logic();
-    }, [is_player_1_turn])
+    // useEffect(() => {
+    //   const player1FromLocalStorage = localStorage.getItem("player_1");
+    //   setIs_player_1(
+    //     wallet?.address !== null &&
+    //     player1FromLocalStorage !== null &&
+    //     wallet?.address === JSON.parse(player1FromLocalStorage));
+    //   turn_logic();
+    // }, [is_player_1_turn])
 
     return (
       <>
         {
-          localStorage.getItem("player_1") == wallet?.address ? (
-            <div></div>
+          is_player_1 ? (
+            <h1 className="text-3xl font-bold underline">
+      Hello world!
+    </h1>
           ) : (
-            <div></div>
+              <div className={"min-h-screen bg-blue-900 flex flex-col items-center "}>
+                {/* Main Div */}
+                <div className="grid grid-rows-5 min-h-screen w-4/5 gap-2">
+                  {/* FIRST DIV */}
+                  <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
+                    <div></div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
+                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 7</div>
+                  </div>
+                  {/* Second Div */}
+                  <div className="h-full  grid grid-rows-5 items-center row-span-3 gap-2 ">
+                    <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2">
+                      <div></div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
+                      <div className="w-full h-full p-2 bg-blue-800 ">Deck</div>
+                    </div>
+                    <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
+                      <div className="flex justify-center ">Buttons A</div>
+                      <div className="flex justify-center">Dashboard</div>
+                      <div className="flex justify-center ">Buttons B</div>
+                    </div>
+          
+                    <div className="grid grid-cols-8 w-full min-h-full bg-green-500 row-span-2 p-2 gap-2 ">
+                      <div className="w-full h-full p-2 bg-green-800 "></div>
+                      <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
+                      <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
+                      <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
+                      <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
+                      <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
+                      <div className="w-full h-full p-2 bg-green-800 "></div>
+                      <div></div>
+                    </div>
+                  </div>
+                  {/* Third Div */}
+                  <div className="grid grid-cols-8 w-full min-h-full bg-green-500 p-2 gap-2 ">
+                    <div className="w-full h-full p-2 bg-green-800 ">DECK</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
+                    <div className="w-full h-full p-2 bg-green-800 ">CARD 7</div>
+                    <div></div>
+                  </div>
+                </div>
+              </div>
           )
         }
           <Box>

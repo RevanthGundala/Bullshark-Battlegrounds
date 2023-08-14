@@ -228,6 +228,10 @@ module card_game::card_game {
         vector::push_back(&mut attacking_player.board, card_to_play);
     }
     
+    // attacking characters are the characters that are attacking
+    // defending characters are the characters that are being attacked
+    // direct_player_attacks is the number of attacking characters
+    //  that are going directly to the player
     public fun attack(
         game: Game, 
     attacking_characters: vector<Card>, 
