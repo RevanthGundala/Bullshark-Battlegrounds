@@ -18,6 +18,8 @@ export default function GamePage() {
     const [player_2_deck_size, setPlayer_2_deck_size] = useState(STARTING_DECK_SIZE);
     const [player_1_hand, setPlayer_1_hand] = useState<string[]>([]);
     const [player_2_hand, setPlayer_2_hand] = useState<string[]>([])
+    const [player_1_deck, setPlayer_1_deck] = useState([]);
+    const [player_2_deck, setPlayer_2_deck] = useState([])
     const [player_1_board, setPlayer_1_board] = useState([]);
     const [player_2_board, setPlayer_2_board] = useState([])
     const router = useRouter(); 
@@ -34,8 +36,16 @@ export default function GamePage() {
     }
     async function checkTurn(){
       setIsLoading(true);
+      setPlayer_1_hand(JSON.parse(localStorage.getItem("player1_hand") || "[]"));
+      setPlayer_2_hand(JSON.parse(localStorage.getItem("player2_hand") || "[]"));
+      setPlayer_1_deck(JSON.parse(localStorage.getItem("player1_deck") || "[]"));
+      setPlayer_2_deck(JSON.parse(localStorage.getItem("player2_deck") || "[]"));
+
       // check if you own the game, else its not turn
       let x = await get_object_ids(wallet, "Game")
+      // fetch board states from game struct
+      setPlayer_1_board();
+      setPlayer_2_board();
 
         if(turn){
           let [player_1_hand_size, player_1_deck_size, 
@@ -64,10 +74,6 @@ export default function GamePage() {
     }
 
       useEffect(() => {
-        setplayer_1_hand(JSON.parse(localStorage.getItem("player_hand") || "[]"));
-      }, [])
-
-      useEffect(() => {
         checkTurn();
       }, [turn])
 
@@ -75,11 +81,10 @@ export default function GamePage() {
       <>
         {
           localStorage.getItem("player_1") == wallet?.address ? (
-
+            <div></div>
           ) : (
-
+            <div></div>
           )
-
         }
         
           <Box>

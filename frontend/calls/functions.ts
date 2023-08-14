@@ -127,10 +127,29 @@ export const create_game = async(accepter: Wallet, opponent: Wallet) => {
     localStorage.setItem("player_1", opponent.address);
     localStorage.setItem("player_2", accepter.address);
 
-    // generate random cards from player 1 and 2 for thier hand
-    let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
+    // generate random cards from player 1 and 2 for thier hands
 
+    // accepter.contents
+    let player_1_deck: string[] = [];
+    let player_1_hand = [];
+    let player_2_deck: string[] = [];
+    let player_2_hand = [];
 
+    for(let i = 0; i < MAX_HAND_SIZE; i++){
+        let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
+        player_1_hand.push(player_1_deck[index]);
+        player_1_deck.splice(index, 1);
+    }
+    for(let i = 0; i < MAX_HAND_SIZE; i++){
+        let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
+        player_2_hand.push(player_2_deck[index]);
+        
+    }
+
+    localStorage.setItem("player_1_hand", JSON.stringify(player_1_hand));
+    localStorage.setItem("player_1_deck", JSON.stringify(player_1_deck));
+    localStorage.setItem("player_2_hand", JSON.stringify(player_2_hand));
+    localStorage.setItem("player_2_deck", JSON.stringify(player_2_deck));
 }
 
 

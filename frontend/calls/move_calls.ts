@@ -120,6 +120,49 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
         let proof_points_bytes: string = "";
         let new_hand_commitment: string = "";
         let transactionBlock = new TransactionBlock();
+
+        let index;
+        let deck_size;
+        let deck;
+        let hand;
+        // update deck and hand after drawnig
+
+        // todo: fix if statement
+        if(wallet.address === JSON.parse(localStorage.getItem("player_1") || "[]")){
+           // read deck size from game_struct
+          deck_size = 0;
+          index = Math.floor(Math.random() * deck_size);
+          hand = JSON.parse(localStorage.getItem("player_1_hand") || "[]");
+          deck = JSON.parse(localStorage.getItem("player_1_deck") || "[]");
+          // add card to hand
+          hand.push(deck[index]);
+
+          // remove card from deck
+          deck.splice(index, 1);
+          
+          // update deck and hand in local storage
+          localStorage.setItem("player_1_hand", JSON.stringify(hand));
+          localStorage.setItem("player_1_deck", JSON.stringify(deck));
+
+        }
+        else{
+          deck_size = 0;
+          index = Math.floor(Math.random() * deck_size);
+          hand = JSON.parse(localStorage.getItem("player_2_hand") || "[]");
+          deck = JSON.parse(localStorage.getItem("player_2_deck") || "[]");
+          // add card to hand
+          hand.push(deck[index]);
+
+          // remove card from deck
+          deck.splice(index, 1);
+          
+          // update deck and hand in local storage
+          localStorage.setItem("player_2_hand", JSON.stringify(hand));
+          localStorage.setItem("player_2_deck", JSON.stringify(deck));
+        }
+
+        // todo: generate random index, put put draw logic after move call
+
        const [attacking_player_hand_size, 
         attacking_player_deck_size,
         defending_player_hand_size,
@@ -150,6 +193,7 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
       console.log("Draw Response", response)
       console.log("H " + attacking_player_hand_size);
       console.log("D: " + attacking_player_deck_size);
+
       return [attacking_player_hand_size, attacking_player_deck_size, 
         defending_player_hand_size, defending_player_deck_size];
     } catch (error) {
@@ -163,9 +207,6 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
     id_card_to_discard: string,
   ) => {
     try{    
-
-        // TODO: cache player hand #
-        // if hand size > max_hand_size .. discard
         let output: string = "";
         let alpha_string: string = "";
         let public_key: string = "";
@@ -175,6 +216,49 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
         let proof_points_bytes: string = "";
         let new_hand_commitment: string = "";
         let transactionBlock = new TransactionBlock();
+
+        let index;
+        let deck_size;
+        let hand;
+         // todo: fix if statement
+
+         if(wallet?.address === JSON.parse(localStorage.getItem("player_1") || "[]")){
+          // read deck size from game_struct
+         hand = JSON.parse(localStorage.getItem("player_1_hand") || "[]");
+
+         // add card to graveyard
+         hand.push(id_card_to_discard); // id
+
+         // remove card from hand
+         index = hand.findIndex((card: string) => card === id_card_to_discard);
+         hand.splice(index, 1);
+         
+         // update deck and hand in local storage
+         localStorage.setItem("player_1_hand", JSON.stringify(hand));
+          
+         // graveryard already updated in contract
+       }
+       else{
+        let index;
+        let deck_size;
+        let hand;
+         // todo: fix if statement
+
+          // read deck size from game_struct
+         hand = JSON.parse(localStorage.getItem("player_2_hand") || "[]");
+
+         // add card to graveyard
+         hand.push(id_card_to_discard); // id
+
+         // remove card from hand
+         index = hand.findIndex((card: string) => card === id_card_to_discard);
+         hand.splice(index, 1);
+         
+         // update deck and hand in local storage
+         localStorage.setItem("player_2_hand", JSON.stringify(hand));
+       }
+
+
         transactionBlock.moveCall({
             target: `${MODULE_ADDRESS}::card_game::discard`,
             arguments: [
@@ -220,6 +304,12 @@ export const accept_challenge = async (wallet: Wallet | undefined, challenge_id:
       let public_inputs_bytes: string = "";
       let proof_points_bytes: string = "";
       let new_hand_commitment: string = "";
+
+
+      // find id of card to play in localStorage
+
+
+
       let transactionBlock = new TransactionBlock();
         let tx = transactionBlock.moveCall({
             target: `${MODULE_ADDRESS}::card_game::play`,
