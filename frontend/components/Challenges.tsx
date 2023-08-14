@@ -16,6 +16,10 @@ export default function Challenges(){
     const router = useRouter();
 
     console.log(wallet?.contents);
+
+    // async function getServerSideProps() {
+
+    // }
     
     useEffect(() => {
         const fetchData = async () => {

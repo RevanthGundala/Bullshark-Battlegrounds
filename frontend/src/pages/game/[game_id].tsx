@@ -162,104 +162,115 @@ export default function GamePage() {
 
     return (
       <>
-        {
-          is_player_1 ? (
-            <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
+          {is_player_1_turn ? (
+              is_player_1 ? (
+                  <>
+                      {/* Logic for player 1's turn */}
+                      {/* Call your functions here */}
+                  </>
+              ) : (
+                  <>
+                      {/* Logic for player 2's turn */}
+                      <div className={"min-h-screen bg-blue-900 flex flex-col items-center "}>
+{/* Main Div */}
+<div className="grid grid-rows-5 min-h-screen w-4/5 gap-2">
+  {/* FIRST DIV */}
+  <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
+    <div></div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
+    <div className="w-full h-full p-2 bg-blue-800 ">
+    {player_1_hand.length > 0 ? (
+      <Image src="/images/cards/back.jpeg" 
+      alt="enemy-deck" />
+    ) : (
+      <Image></Image>
+    )}
+    </div>
+  </div>
+  {/* Second Div */}
+  <div className="h-full  grid grid-rows-5 items-center row-span-3 gap-2 ">
+    <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2">
+      <div></div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
+      <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
+      <div className="w-full h-full p-2 bg-blue-800 "></div>
+    </div>
+    <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
+      <div className="flex justify-center ">
+      <Button 
+        colorScheme='yellow' isLoading={isAttacking} onClick={() => 
+          end_turn(wallet, router.query.game_id as string)} 
+          disabled={isDisabled}>
+            End Turn
+    </Button>
+      </div>
+      <div className="flex justify-center"></div>
+      <div className="flex justify-center ">
+      <Button colorScheme="red" isLoading={isAttacking} 
+      onClick={() => {
+        surrender(wallet, router.query.game_id as string);
+        router.push("/");
+      }}>
+          Surrender
+    </Button>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-8 w-full min-h-full bg-green-500 row-span-2 p-2 gap-2 ">
+      <div className="w-full h-full p-2 bg-green-800 "></div>
+      <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
+      <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
+      <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
+      <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
+      <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
+      <div className="w-full h-full p-2 bg-green-800 "></div>
+      <div></div>
+    </div>
+  </div>
+  {/* Third Div */}
+  <div className="grid grid-cols-8 w-full min-h-full bg-green-500 p-2 gap-2 ">
+    <div className="w-full h-full p-2 bg-green-800 ">
+    <Image src="/images/cards/back.jpeg" alt="your-deck" />
+    </div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
+    <div className="w-full h-full p-2 bg-green-800 ">CARD 7</div>
+    <div></div>
+  </div>
+</div>
+</div>
+
+                  </>
+              )
           ) : (
-              <div className={"min-h-screen bg-blue-900 flex flex-col items-center "}>
-                {/* Main Div */}
-                <div className="grid grid-rows-5 min-h-screen w-4/5 gap-2">
-                  {/* FIRST DIV */}
-                  <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
-                    <div></div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
-                    <div className="w-full h-full p-2 bg-blue-800 ">CARD 7</div>
-                  </div>
-                  {/* Second Div */}
-                  <div className="h-full  grid grid-rows-5 items-center row-span-3 gap-2 ">
-                    <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2">
-                      <div></div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
-                      <div className="w-full h-full p-2 bg-blue-800 ">Deck</div>
-                    </div>
-                    <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
-                      <div className="flex justify-center ">Buttons A</div>
-                      <div className="flex justify-center">Dashboard</div>
-                      <div className="flex justify-center ">Buttons B</div>
-                    </div>
-          
-                    <div className="grid grid-cols-8 w-full min-h-full bg-green-500 row-span-2 p-2 gap-2 ">
-                      <div className="w-full h-full p-2 bg-green-800 "></div>
-                      <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
-                      <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
-                      <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
-                      <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
-                      <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
-                      <div className="w-full h-full p-2 bg-green-800 "></div>
-                      <div></div>
-                    </div>
-                  </div>
-                  {/* Third Div */}
-                  <div className="grid grid-cols-8 w-full min-h-full bg-green-500 p-2 gap-2 ">
-                    <div className="w-full h-full p-2 bg-green-800 ">DECK</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
-                    <div className="w-full h-full p-2 bg-green-800 ">CARD 7</div>
-                    <div></div>
-                  </div>
-                </div>
-              </div>
-          )
-        }
-          <Box>
-          {player_1_hand.length > 0 ? (
-          <Image src="/images/cards/back.jpeg" 
-          alt="your-deck" 
-          height="200px"/>
-        ) : (
-          <Image></Image>
-        )}
-        {player_2_hand.length > 0 ? (
-          <Image src="/images/cards/back.jpeg" 
-          alt="enemy-deck" 
-          height="200px"/>
-        ) : (
-          <Image></Image>
-        )}
-        <Box>
-        <Button 
-            colorScheme='yellow' isLoading={isAttacking} onClick={() => 
-              end_turn(wallet, router.query.game_id as string)} 
-              disabled={isDisabled}>
-                End Turn
-        </Button>
-        <Button colorScheme="red" isLoading={isAttacking} 
-            onClick={() => {
-              surrender(wallet, router.query.game_id as string);
-              router.push("/");
-            }}>
-                Surrender
-        </Button>
-
-        </Box>
-          </Box>
+              !is_player_1 ? (
+                  <>
+                      {/* Logic for player 2's turn */}
+                      {/* Call your functions here */}
+                  </>
+              ) : (
+                  <>
+                      {/* Logic for not player 2's turn */}
+                      {/* Call your functions here */}
+                  </>
+              )
+          )}
+  
+          {/* Rest of your JSX */}
       </>
-    );
+  );
+  
 }
-
 
