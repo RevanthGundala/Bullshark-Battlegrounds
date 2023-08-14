@@ -228,25 +228,28 @@ module card_game::card_game {
         vector::push_back(&mut attacking_player.board, card_to_play);
     }
     
+    // attacking characters are the characters that are attacking
+    // defending characters are the characters that are being attacked
+    // direct_player_attacks is the number of attacking characters
+    //  that are going directly to the player
     public fun attack(
         game: Game, 
     attacking_characters: vector<Card>, 
     defending_characters: vector<Card>, 
-    direct_player_attacks: vector<u64>, 
+    direct_player_attacks: u64, 
     ctx: &mut TxContext){
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
         let attacking_size = vector::length<Card>(&attacking_characters);
         let defending_size = vector::length<Card>(&defending_characters);
-        let direct_player_attack_size = vector::length<u64>(&direct_player_attacks);
 
         let attacking_board_size = vector::length<Card>(&attacking_player.board);
         let defending_board_size = vector::length<Card>(&defending_player.board);
        
         assert!(attacking_size <= attacking_board_size, EAttackersNotSelectedCorrectly);
         // I.e. user can't select 2 characters and attack 3 objects
-        assert!(attacking_size <= defending_size + direct_player_attack_size, ETooManyDefendingCharacters); 
-        assert!(defending_size >= defending_board_size, EDefendersNotSelectedCorrectly);        
+        assert!(attacking_size <= defending_size + direct_player_attacks, ETooManyDefendingCharacters); 
+        assert!(defending_size <= defending_board_size, EDefendersNotSelectedCorrectly);        
 
         let game_over = false;
         
@@ -262,22 +265,20 @@ module card_game::card_game {
 
                 // Compute the attack results (Sui doesn't support negative numbers)
                 if(attacking_character.type.attack < defending_character.type.defense) {
-                    let difference = defending_character.type.defense - attacking_character.type.attack;
-                    defending_character.type.defense = difference;
+                    defending_character.type.defense = defending_character.type.defense - attacking_character.type.attack;
                 };
                 if(attacking_character.type.defense > defending_character.type.attack){
-                    let difference = attacking_character.type.defense - defending_character.type.attack;
-                    attacking_character.type.defense = difference;
+                    attacking_character.type.defense = attacking_character.type.defense - defending_character.type.attack;
                 }
                 // remove characters from board
                 else{
                     if(attacking_character.type.attack >= defending_character.type.defense){
-                        let dead_card = vector::remove<Card>(&mut defending_player.board, i);
-                        vector::push_back<Card>(&mut defending_player.graveyard, dead_card);
+                        vector::push_back<Card>(&mut defending_player.graveyard, 
+                        vector::remove<Card>(&mut defending_player.board, i));
                     };
                     if(attacking_character.type.defense <= defending_character.type.attack){
-                        let dead_card = vector::remove<Card>(&mut attacking_player.board, i);
-                        vector::push_back<Card>(&mut attacking_player.graveyard, dead_card);
+                        vector::push_back<Card>(&mut attacking_player.graveyard, 
+                        vector::remove<Card>(&mut attacking_player.board, i));
                     };
                 };
             }   
@@ -292,9 +293,11 @@ module card_game::card_game {
             };
             i = i + 1;
         };
+
+        // clear out arrays and drop objects
         let _ = defending_player.addr;
         let _ = attacking_player.addr;
-         let i = 0;
+        let i = 0;
             while(i < attacking_size){
                 let card = vector::pop_back<Card>(&mut attacking_characters);
                 let Card{
@@ -371,10 +374,6 @@ module card_game::card_game {
         let is_verified = ecvrf::ecvrf_verify(&output, &alpha_string, &public_key, &proof);
         event::emit(VerifiedEvent {is_verified: is_verified});
         is_verified
-    }
-
-    public fun get_game(game: &Game): &Game {
-        game
     }
 
     /////////////////////////

@@ -34,7 +34,7 @@ export const get_object_ids = async (
         const data = await response.json();
         const tempChallenges: string[] = data?.result?.data?.map((item: { data: { objectId: string } }) => item.data.objectId);
         const tempChallengers: string[] = await Promise.all(
-            tempChallenges.map((id: string) => get_object_from_id(wallet, id, object_name))
+            tempChallenges.map((id: string) => get_object_from_id(id, object_name))
         );
         return[tempChallenges, tempChallengers];
     } catch (error) {
@@ -44,7 +44,6 @@ export const get_object_ids = async (
 }
 
 export const get_object_from_id = async (
-    wallet: Wallet | undefined, 
     id: string, 
     object_name: string) => {
     try{
@@ -74,7 +73,16 @@ export const get_object_from_id = async (
             }
         );
         const data = (await response.json()).result.data.content.fields;
-        return object_name === "Challenge" ? data.challenger : data.game;
+        if(object_name === "Challenge"){
+            return data.challenge;
+        }
+        else if(object_name === "Game"){
+            return data.game;
+        }
+        else if(object_name === "Card"){
+            return data.card;
+        }
+        return;
     } catch (error) {
         console.log(error);
     }

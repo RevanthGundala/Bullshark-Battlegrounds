@@ -4,8 +4,9 @@ import { useRouter } from "next/router";
 import {useState, useEffect, useCallback} from "react";
 import {ethos, TransactionBlock, SignInButton} from "ethos-connect";
 
-import { accept_challenge, draw, get_game_struct } from "../calls/move_calls";
+import { accept_challenge, draw } from "../calls/move_calls";
 import { get_object_ids } from "../calls/api_calls";
+import { create_game } from "../calls/functions";
 
 export default function Challenges(){
     const { wallet } = ethos.useWallet();
@@ -19,16 +20,17 @@ export default function Challenges(){
     useEffect(() => {
         const fetchData = async () => {
             try {
-              // fetch challenges
               setIsLoading(true);
               let [tempChallenges, tempChallengers]: string[][] = await get_object_ids(wallet, "Challenge");
-              // Now you can use tempChallenges and tempChallengers in your component's state or other logic
               setChallenges(tempChallenges);
               setChallengers(tempChallengers);
             
-              // check if we own a game object
-              // todo: make it so we cant have multiple obj
+              // check if we own a game object = game started-> router.push
+              // in this case we started the challenge
+
+              // await create_game(game.opponent, wallet)
               let data = await get_object_ids(wallet, "Game");
+
               /*
               if(data[0].length > 0){
                 router.push(`/game/${data[0][0]}`)
@@ -51,18 +53,23 @@ export default function Challenges(){
           <Box>
             <VStack spacing="20px">
               {isLoading || challenges === undefined ? (
-                <Spinner size="xl">
-                    <Text>Loading...</Text>
-                    </Spinner>
+                <Box>
+                <Spinner size="xl" />
+                    <Text fontWeight={"bold"}>Searching...</Text>
+                    </Box>
               ) : (
                 <Box>
                 {challenges.map((challenge, index) => (
                       <Box key={index} onClick={
                         async () => {
                           let game_id = await accept_challenge(wallet, challenge);
+                          {wallet === undefined || challengers[index] === undefined ? 
+                          <div></div> :
+                          await create_game(wallet, challengers[index]);
                           router.push("/game/" + game_id);
+                        }
                       }}>
-                        Challenger: {ethos.truncateMiddle(challengers[index], 4)}
+                        Challenger: {ethos.truncateMiddle(challengers[index], 6)}
                         <br />
                       </Box>
                 ))}

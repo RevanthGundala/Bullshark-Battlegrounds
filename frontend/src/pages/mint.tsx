@@ -29,7 +29,7 @@ export default function Mint() {
             onClick={() => {
               setIsLoading(true);
               NFTS.forEach((nft) => {
-                get_new_character_gasless(wallet, nft.name, nft.description, nft.image, Math.floor(Math.random() * 5), Math.floor(Math.random() * 5));
+                get_new_character_gasless(wallet, nft.name, nft.description, nft.image_url, Math.floor(Math.random() * 5), Math.floor(Math.random() * 5));
               });
               setIsLoading(false);
             }}>

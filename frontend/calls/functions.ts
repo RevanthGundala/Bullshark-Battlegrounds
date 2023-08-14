@@ -8,7 +8,8 @@ import {
 import { rpcClient } from "typed-rpc";
 import {Wallet } from "ethos-connect";
 import { get_new_character } from "./move_calls";
-import { MAX_HAND_SIZE, STARTING_DECK_SIZE, TOTAL_DECK_SIZE } from "../constants";
+import { MAX_HAND_SIZE, STARTING_DECK_SIZE, TOTAL_DECK_SIZE, Card } from "../constants";
+import { get_object_from_id } from "./api_calls";
 // start a new session with shinami key 
 
 // The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
@@ -32,7 +33,7 @@ interface KeyServiceRpc {
 const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
     getHeaders() {
         return {
-            "X-API-Key": process.env.NEXT_PUBLIC_ACCESS_TOKEN
+            "X-API-Key": "<API_ACCESS_KEY>"
         };
     },
 });
@@ -122,19 +123,20 @@ async(wallet: Wallet,
 }    
 
 
-export const create_game = async(accepter: Wallet, opponent: Wallet) => {
+export const create_game = async(accepter: Wallet , opponent: string) => {
     // when someone calls create_game, I know that p2 is the accepter, and p1 owns the object
-    localStorage.setItem("player_1", opponent.address);
+    localStorage.setItem("player_1", opponent);
     localStorage.setItem("player_2", accepter.address);
 
-    // generate random cards from player 1 and 2 for thier hands
+    // let nfts = accepter.contents
+    // let enemy_nfts = opponent.contents 
 
-    // accepter.contents
-    let player_1_deck: string[] = [];
+    let player_1_deck: any[] = []; // nfts.slice(0, STARTING_DECK_SIZE)
     let player_1_hand = [];
-    let player_2_deck: string[] = [];
+    let player_2_deck: any[] = [];
     let player_2_hand = [];
 
+    // move cards from deck to hand in random way
     for(let i = 0; i < MAX_HAND_SIZE; i++){
         let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
         player_1_hand.push(player_1_deck[index]);
@@ -143,18 +145,19 @@ export const create_game = async(accepter: Wallet, opponent: Wallet) => {
     for(let i = 0; i < MAX_HAND_SIZE; i++){
         let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
         player_2_hand.push(player_2_deck[index]);
-        
+        player_2_deck.splice(index, 1);
     }
+
+    player_1_deck.map(async (id: string) => {
+        await get_object_from_id(id, "Card")
+    });
+
+    player_2_deck.map(async (id: string) => {
+        await get_object_from_id(id, "Card")
+    });
 
     localStorage.setItem("player_1_hand", JSON.stringify(player_1_hand));
     localStorage.setItem("player_1_deck", JSON.stringify(player_1_deck));
     localStorage.setItem("player_2_hand", JSON.stringify(player_2_hand));
     localStorage.setItem("player_2_deck", JSON.stringify(player_2_deck));
 }
-
-
-// Once i have game struct, I can view p1 and p2 addressses
-// turn is determined on whether p1 has game struct, or p2 has game struct
-
-// my state should contain p1 and p2.
-// when create_game is called, set localstorage for p1 and p2

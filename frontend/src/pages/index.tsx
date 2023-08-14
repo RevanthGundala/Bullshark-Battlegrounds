@@ -6,8 +6,6 @@ import {ethos, EthosConnectStatus} from "ethos-connect";
 import StartChallenge from "../../components/StartChallenge";
 
 export default function Home() {
-  const {wallet} = ethos.useWallet();
-  console.log(wallet?.contents);
   return (
     <>
       <Navbar />
