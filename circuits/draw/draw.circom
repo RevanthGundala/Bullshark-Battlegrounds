@@ -1,6 +1,6 @@
-pragma circom 2.1.4;
+// pragma circom 2.1.4;
 
-include "../node_modules/circomlib/circuits/poseidon.circom";
+// include "../node_modules/circomlib/circuits/poseidon.circom";
 
 // // can be used to draw a card
 // template Draw(nHandInputs, nDeckInputs) {
@@ -80,57 +80,70 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 // component main { public [ handSaltHash, hand_card_id_hashes, handCommittment, deckSaltHash, deck_card_id_hashes, deckCommittment] } = Draw(1, 1);
 
 
+//     // Private Inputs
+//     signal input handSalt;
+//     signal input random_hand_card_id;
 
-template Draw(){
-    // Private Inputs
-    signal input handSalt;
-    signal input random_hand_card_id;
+//     signal input deckSalt;
+//     signal input random_deck_card_id;
 
-    signal input deckSalt;
-    signal input random_deck_card_id;
+//     signal input card_id_drawn;
 
-    signal input card_id_drawn;
+//     // Public Inputs
+//     signal input handSaltHash;
+//     signal input random_hand_card_id_hash; // hash of hand card ids and handSalt
+//     signal input handCommittment;
 
-    // Public Inputs
-    signal input handSaltHash;
-    signal input random_hand_card_id_hash; // hash of hand card ids and handSalt
-    signal input handCommittment;
+//     signal input deckSaltHash;
+//     signal input random_deck_card_id_hash;
+//     signal input deckCommittment; // hash of deck card ids and deckSalt
 
-    signal input deckSaltHash;
-    signal input random_deck_card_id_hash;
-    signal input deckCommittment; // hash of deck card ids and deckSalt
+//     component randomHandCardHasher = Poseidon(1);
+//     component handCommittmentHasher = Poseidon(1);
+//     component handSaltHasher = Poseidon(1);
 
-    component randomHandCardHasher = Poseidon(1);
-    component handCommittmentHasher = Poseidon(1);
-    component handSaltHasher = Poseidon(1);
+//     component randomDeckCardHasher = Poseidon(1);
+//     component deckCommittmentHasher = Poseidon(1);
+//     component deckSaltHasher = Poseidon(1);
 
-    component randomDeckCardHasher = Poseidon(1);
-    component deckCommittmentHasher = Poseidon(1);
-    component deckSaltHasher = Poseidon(1);
+//     randomHandCardHasher.inputs[0] <== random_hand_card_id;
+//     randomDeckCardHasher.inputs[0] <== random_deck_card_id;  
+//         // assert that PubhandSaltHash is the hash of the handSalt
+//     handSaltHasher.inputs[0] <== handSalt;
+//     handSaltHasher.out === handSaltHash;
 
-    randomHandCardHasher.inputs[0] <== random_hand_card_id;
-    randomDeckCardHasher.inputs[0] <== random_deck_card_id;  
-        // assert that PubhandSaltHash is the hash of the handSalt
-    handSaltHasher.inputs[0] <== handSalt;
-    handSaltHasher.out === handSaltHash;
-
-    // repeat with deck
-    deckSaltHasher.inputs[0] <== deckSalt;
-    deckSaltHasher.out === deckSaltHash;
+//     // repeat with deck
+//     deckSaltHasher.inputs[0] <== deckSalt;
+//     deckSaltHasher.out === deckSaltHash;
 
 
 
-        // assert that the handCommittment and deckCommittment lines up with the hash provided
-   handCommittmentHasher.out === handCommittment;
-   deckCommittmentHasher.out === deckCommittment;
-   randomHandCardHasher.out === random_hand_card_id_hash;  
-   randomHandCardHasher.out === random_hand_card_id_hash;  
+//         // assert that the handCommittment and deckCommittment lines up with the hash provided
+//    handCommittmentHasher.out === handCommittment;
+//    deckCommittmentHasher.out === deckCommittment;
+//    randomHandCardHasher.out === random_hand_card_id_hash;  
+//    randomHandCardHasher.out === random_hand_card_id_hash;  
 
 
-    // ensures that card id that we are drawing isn't being swapped for another card id
-   signal card_id_drawn_squared;
-   card_id_drawn_squared <== card_id_drawn * card_id_drawn;
+//     // ensures that card id that we are drawing isn't being swapped for another card id
+//    signal card_id_drawn_squared;
+//    card_id_drawn_squared <== card_id_drawn * card_id_drawn;
+// }
+
+
+// component main{public [handSaltHash, random_hand_card_id_hash, handCommittment, deckSaltHash, random_deck_card_id_hash, deckCommittment]} = Draw();
+
+
+pragma circom 2.1.5;
+
+include "../node_modules/circomlib/circuits/poseidon.circom";
+
+template Draw() {
+    component poseidon = Poseidon(1);
+    signal input in;
+    signal output digest;
+    poseidon.inputs[0] <== in;
+    digest <== poseidon.out;
 }
 
-
-component main{public [handSaltHash, random_hand_card_id_hash, handCommittment, deckSaltHash, random_deck_card_id_hash, deckCommittment]} = Draw();
+component main = Draw();

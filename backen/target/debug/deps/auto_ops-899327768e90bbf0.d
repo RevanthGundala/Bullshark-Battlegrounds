@@ -1,0 +1,10 @@
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/deps/auto_ops-899327768e90bbf0.rmeta: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/assignment.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/binary.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/unary.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/deps/libauto_ops-899327768e90bbf0.rlib: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/assignment.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/binary.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/unary.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/deps/auto_ops-899327768e90bbf0.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/assignment.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/binary.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/unary.rs
+
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/lib.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/assignment.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/binary.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/auto_ops-0.3.0/src/unary.rs:

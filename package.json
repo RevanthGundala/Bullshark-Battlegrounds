@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "circomlib": "^2.0.5"
+    "circomlib": "^2.0.5",
+    "eth-crypto": "^2.6.0"
   },
   "devDependencies": {
     "tailwindcss": "^3.3.3"
