@@ -141,38 +141,39 @@ export default function GamePage() {
       }
     }
     // fill in struct fields for each player
+    if (p1_contract && p2_contract) {
+      let player1: PlayerObject = {
+        address: p1_addr,
+        board: p1_contract?.board || [],
+        deck_commitment: p1_contract?.deck_commitment || "",
+        deck_size: p1_contract?.deck_size,
+        graveyard: p1_contract?.graveyard || [],
+        hand_commitment: p1_contract?.hand_commitment,
+        hand_size: p1_contract.hand_size,
+        id: p1_contract.id.id,
+        life: p1_contract.life,
+        deck: players.player_1?.deck || [],
+        hand: players.player_1?.hand || [],
+      };
+      let player2: PlayerObject = {
+        address: p2_addr,
+        board: p2_contract?.board || [],
+        deck_commitment: p2_contract.deck_commitment,
+        deck_size: p2_contract.deck_size,
+        graveyard: p2_contract?.graveyard || [],
+        hand_commitment: p2_contract.hand_commitment,
+        hand_size: p2_contract.hand_size,
+        id: p2_contract.id.id,
+        life: p2_contract.life,
+        deck: players.player_2?.deck || [],
+        hand: players.player_2?.hand || [],
+      };
 
-    let player1: PlayerObject = {
-      address: p1_addr,
-      board: p1_contract.board || [],
-      deck_commitment: p1_contract.deck_commitment,
-      deck_size: p1_contract.deck_size,
-      graveyard: p1_contract.graveyard || [],
-      hand_commitment: p1_contract.hand_commitment,
-      hand_size: p1_contract.hand_size,
-      id: p1_contract.id.id,
-      life: p1_contract.life,
-      deck: players.player_1.deck || [],
-      hand: players.player_1.hand || [],
-    };
-    let player2: PlayerObject = {
-      address: p2_addr,
-      board: p2_contract.board || [],
-      deck_commitment: p2_contract.deck_commitment,
-      deck_size: p2_contract.deck_size,
-      graveyard: p2_contract.graveyard || [],
-      hand_commitment: p2_contract.hand_commitment,
-      hand_size: p2_contract.hand_size,
-      id: p2_contract.id.id,
-      life: p2_contract.life,
-      deck: players.player_2.deck || [],
-      hand: players.player_2.hand || [],
-    };
-
-    setPlayer_1(player1);
-    setPlayer_2(player2);
-    console.log("p1 " + JSON.stringify(player_1, null, 2));
-    console.log("p2 " + JSON.stringify(player_2, null, 2));
+      setPlayer_1(player1);
+      setPlayer_2(player2);
+      console.log("p1 " + JSON.stringify(player_1, null, 2));
+      console.log("p2 " + JSON.stringify(player_2, null, 2));
+    }
   }
 
   async function handleCardClick(card: Card) {
@@ -390,7 +391,13 @@ export default function GamePage() {
             <div className="grid grid-rows-7 min-h-screen w-4/5 gap-2">
               {/* FIRST DIV */}
               <div className="grid grid-cols-8 w-full min-h-full bg-green-500 gap-2 p-2 ">
-                <div className="w-full h-full p-2 bg-green-800 "></div>
+                <div className="w-full h-full p-2 bg-green-800 ">
+                  {player_2 && player_2.hand && player_2.hand.length > 0 ? (
+                    <Image src="/images/cards/back.jpeg" alt="enemy-deck" />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
                 <div className="w-full h-full p-2 bg-green-800 "></div>
                 <div className="w-full h-full p-2 bg-green-800 "></div>
                 <div className="w-full h-full p-2 bg-green-800 ">
@@ -407,32 +414,40 @@ export default function GamePage() {
                 <div className="w-full h-full p-2 bg-green-800 "></div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-full bg-green-500 gap-2 p-2 ">
-                <div></div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 1</div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
-                <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
-                <div className="w-full h-full p-2 bg-green-800 ">
-                  {player_2 && player_2.hand && player_2.hand.length > 0 ? (
-                    <Image src="/images/cards/back.jpeg" alt="enemy-deck" />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
+                <div className="w-full h-full p-2 bg-green-800 "></div>
+                {player_2?.hand?.map((card: Card, index: number) => (
+                  <div key={index} className="w-full h-full p-2 bg-green-800">
+                    <Image src="/images/cards/back.jpeg" alt="card" />
+                  </div>
+                ))}
+                <div className="w-full h-full p-2 bg-green-800 "></div>
               </div>
+
               {/* Second Div */}
               <div className="h-full  grid grid-rows-7 items-center row-span-3 gap-2 ">
                 <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-green-500 gap-2 p-2">
-                  <div></div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 1</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
-                  <div className="w-full h-full p-2 bg-green-800 "></div>
+                  {player_2?.board?.map((card: Card, index: number) => (
+                    <div key={index} className="w-full h-full p-2 bg-green-800">
+                      <Tooltip
+                        placement="bottom"
+                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      >
+                        <Button
+                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          className="w-full h-full p-0 hover:border-red-500"
+                          style={{
+                            border: isWaitingForAttack
+                              ? "2px solid red"
+                              : "none",
+                            background: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Image src="/images/cards/front.png" alt="shark" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  ))}
                 </div>
                 <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
                   <div className="flex justify-center ">
@@ -468,23 +483,31 @@ export default function GamePage() {
 
                 <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 row-span-2 p-2 gap-2 ">
                   <div className="w-full h-full p-2 bg-blue-800 "></div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
-                  <div className="w-full h-full p-2 bg-blue-800 "></div>
-                  <div></div>
+                  {player_1?.board?.map((card: Card, index: number) => (
+                    <div key={index} className="w-full h-full p-2 bg-blue-800">
+                      <Tooltip
+                        placement="bottom"
+                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      >
+                        <Button
+                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          className="w-full h-full p-0 hover:border-red-500"
+                          style={{
+                            border: isWaitingForAttack
+                              ? "2px solid red"
+                              : "none",
+                            background: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Image src="/images/cards/front.png" alt="shark" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 p-2 gap-2 ">
-                <div className="w-full h-full p-2 bg-blue-800 ">
-                  {player_1 && player_1.deck && player_1.deck.length > 0 ? (
-                    <Image src="/images/cards/back.jpeg" alt="your-deck" />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
                 {player_1?.hand?.map((card: Card, index: number) => (
                   <div key={index} className="w-full h-full p-2 bg-blue-800">
                     <Tooltip
@@ -499,12 +522,15 @@ export default function GamePage() {
                           background: "none",
                           cursor: "pointer",
                         }}
-                      ></Button>
+                      >
+                        <Image src="/images/cards/front.png" alt="shark" />
+                      </Button>
                     </Tooltip>
                   </div>
                 ))}
               </div>
               <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2">
+                <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
@@ -518,8 +544,13 @@ export default function GamePage() {
                 </div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
-                <div className="w-full h-full p-2 bg-blue-800 "></div>
-                <div className="w-full h-full p-2 bg-blue-800 "></div>
+                <div className="w-full h-full p-2 bg-blue-800 ">
+                  {player_1 && player_1.deck && player_1.deck.length > 0 ? (
+                    <Image src="/images/cards/back.jpeg" alt="your-deck" />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -536,7 +567,13 @@ export default function GamePage() {
             <div className="grid grid-rows-7 min-h-screen w-4/5 gap-2">
               {/* FIRST DIV */}
               <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
-                <div className="w-full h-full p-2 bg-blue-800 "></div>
+                <div className="w-full h-full p-2 bg-green-800 ">
+                  {player_1 && player_1.hand && player_1.hand.length > 0 ? (
+                    <Image src="/images/cards/back.jpeg" alt="enemy-deck" />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
                 <div className="w-full h-full p-2 bg-blue-800 ">
@@ -553,32 +590,39 @@ export default function GamePage() {
                 <div className="w-full h-full p-2 bg-blue-800 "></div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
-                <div></div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
-                <div className="w-full h-full p-2 bg-blue-800 ">
-                  {player_1 && player_1.hand && player_1.hand.length > 0 ? (
-                    <Image src="/images/cards/back.jpeg" alt="enemy-deck" />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
+                <div className="w-full h-full p-2 bg-blue-800 "></div>
+                {player_1?.hand?.map((card: Card, index: number) => (
+                  <div key={index} className="w-full h-full p-2 bg-blue-800">
+                    <Image src="/images/cards/back.jpeg" alt="card" />
+                  </div>
+                ))}
+                <div className="w-full h-full p-2 bg-blue-800 "></div>
               </div>
               {/* Second Div */}
               <div className="h-full  grid grid-rows-7 items-center row-span-3 gap-2 ">
                 <div className="grid row-span-2 grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2">
-                  <div></div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 1</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 2</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 3</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 4</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 5</div>
-                  <div className="w-full h-full p-2 bg-blue-800 ">CARD 6</div>
-                  <div className="w-full h-full p-2 bg-blue-800 "></div>
+                  {player_1?.board?.map((card: Card, index: number) => (
+                    <div key={index} className="w-full h-full p-2 bg-blue-800">
+                      <Tooltip
+                        placement="bottom"
+                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      >
+                        <Button
+                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          className="w-full h-full p-0 hover:border-red-500"
+                          style={{
+                            border: isWaitingForAttack
+                              ? "2px solid red"
+                              : "none",
+                            background: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Image src="/images/cards/front.png" alt="shark" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  ))}
                 </div>
                 <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
                   <div className="flex justify-center ">
@@ -613,20 +657,31 @@ export default function GamePage() {
                 </div>
 
                 <div className="grid grid-cols-8 w-full min-h-full bg-green-500 row-span-2 p-2 gap-2 ">
-                  <div className="w-full h-full p-2 bg-green-800 "></div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 2</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 3</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 4</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 5</div>
-                  <div className="w-full h-full p-2 bg-green-800 ">CARD 6</div>
-                  <div className="w-full h-full p-2 bg-green-800 "></div>
-                  <div></div>
+                  {player_2?.board?.map((card: Card, index: number) => (
+                    <div key={index} className="w-full h-full p-2 bg-green-800">
+                      <Tooltip
+                        placement="bottom"
+                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      >
+                        <Button
+                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          className="w-full h-full p-0 hover:border-red-500"
+                          style={{
+                            border: isWaitingForAttack
+                              ? "2px solid red"
+                              : "none",
+                            background: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Image src="/images/cards/front.png" alt="shark" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-full bg-green-500 p-2 gap-2 ">
-                <div className="w-full h-full p-2 bg-green-800 ">
-                  <Image src="/images/cards/back.jpeg" alt="your-deck" />
-                </div>
                 {player_2?.hand?.map((card: Card, index: number) => (
                   <div key={index} className="w-full h-full p-2 bg-green-800">
                     <Tooltip
@@ -641,7 +696,9 @@ export default function GamePage() {
                           background: "none",
                           cursor: "pointer",
                         }}
-                      ></Button>
+                      >
+                        <Image src="/images/cards/front.png" alt="shark" />
+                      </Button>
                     </Tooltip>
                   </div>
                 ))}
