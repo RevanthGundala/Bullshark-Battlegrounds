@@ -1,7 +1,11 @@
 import { Chain, TransactionBlock, Wallet } from "ethos-connect";
-import { MODULE_ADDRESS, MAX_HAND_SIZE, TOTAL_DECK_SIZE } from "../constants";
+import {
+  MODULE_ADDRESS,
+  MAX_HAND_SIZE,
+  TOTAL_DECK_SIZE,
+  Card,
+} from "../constants";
 import { get_object_ids, listen_for_events } from "./api_calls";
-import { create_game } from "./functions";
 import { NextRouter } from "next/router";
 import { NFTS } from "../constants";
 
@@ -9,6 +13,12 @@ export type Proof = {
   public_inputs_bytes: string | undefined;
   proof_points_bytes: string | undefined;
 };
+
+interface PlayerBackend {
+  address: string;
+  hand: string[];
+  deck: string[];
+}
 
 export const get_new_character = async (wallet: Wallet | undefined) => {
   if (!wallet) return;
@@ -106,7 +116,13 @@ export const accept_challenge = async (
   }
 };
 
-export const draw = async (wallet: Wallet | undefined, game_id: string) => {
+export const draw = async (
+  wallet: Wallet | undefined,
+  game_id: string,
+  is_player_1: boolean,
+  player_1: PlayerBackend,
+  player_2: PlayerBackend
+) => {
   if (!wallet) return;
   try {
     let output: string = "";
@@ -120,35 +136,19 @@ export const draw = async (wallet: Wallet | undefined, game_id: string) => {
     let transactionBlock = new TransactionBlock();
 
     let index;
-    let deck_size;
     let deck;
     let hand;
 
     // todo: fix if statement
-    if (
-      wallet.address === JSON.parse(localStorage.getItem("player_1") || "[]")
-    ) {
-      // wallet.contents.game == game_id
-
-      deck_size = 0; // todo: read from game_struct
-      index = Math.floor(Math.random() * deck_size);
-      hand = JSON.parse(localStorage.getItem("player_1_hand") || "[]");
-      deck = JSON.parse(localStorage.getItem("player_1_deck") || "[]");
+    if (is_player_1) {
+      index = Math.floor(Math.random() * player_1.deck.length);
     } else {
-      deck_size = 0;
-      index = Math.floor(Math.random() * deck_size);
-      hand = JSON.parse(localStorage.getItem("player_2_hand") || "[]");
-      deck = JSON.parse(localStorage.getItem("player_2_deck") || "[]");
+      index = Math.floor(Math.random() * player_2.deck.length);
     }
 
     // todo: generate random index, put put draw logic after move call
 
-    const [
-      attacking_player_hand_size,
-      attacking_player_deck_size,
-      defending_player_hand_size,
-      defending_player_deck_size,
-    ] = transactionBlock.moveCall({
+    const tx = transactionBlock.moveCall({
       target: `${MODULE_ADDRESS}::card_game::draw`,
       arguments: [
         transactionBlock.object(game_id),
@@ -174,30 +174,39 @@ export const draw = async (wallet: Wallet | undefined, game_id: string) => {
     });
     console.log("Draw Response: Success\n", response);
 
-    // Perform on-chain logic then update hand + deck in local storage
+    // Perform on-chain logic then update hand + deck in server
 
-    // add card to hand
-    hand.push(deck[index]);
-    // remove card from deck
-    deck.splice(index, 1);
-
-    if (
-      wallet.address === JSON.parse(localStorage.getItem("player_1") || "[]")
-    ) {
-      localStorage.setItem("player_1_hand", JSON.stringify(hand));
-      localStorage.setItem("player_1_deck", JSON.stringify(deck));
+    if (is_player_1) {
+      player_1.hand?.push(player_1.deck?.[index]);
+      player_1.deck?.splice(index, 1);
     } else {
-      localStorage.setItem("player_2_hand", JSON.stringify(hand));
-      localStorage.setItem("player_2_deck", JSON.stringify(deck));
+      player_2.hand?.push(player_2.deck?.[index] || "");
+      player_2.deck?.splice(index, 1);
     }
 
-    console.log("DRAW: Updated Local Storage");
-    return [
-      attacking_player_hand_size,
-      attacking_player_deck_size,
-      defending_player_hand_size,
-      defending_player_deck_size,
-    ];
+    let post_response = await fetch("http://localhost:5002/api/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        player_1: {
+          address: player_1.address,
+          hand: player_1.hand,
+          deck: player_1.deck,
+        },
+        player_2: {
+          address: player_2.address,
+          hand: player_2.hand,
+          deck: player_2.deck,
+        },
+      }),
+    });
+    if (!post_response.ok) {
+      throw new Error(post_response.status.toString());
+    }
+    const result = await post_response.text();
+    console.log(result);
   } catch (error) {
     console.log(error);
   }
@@ -206,7 +215,10 @@ export const draw = async (wallet: Wallet | undefined, game_id: string) => {
 export const discard = async (
   wallet: Wallet | undefined,
   game_id: string,
-  id_card_to_discard: string
+  id_card_to_discard: string,
+  is_player_1: boolean,
+  player_1: PlayerBackend,
+  player_2: PlayerBackend
 ) => {
   try {
     let output: string = "";
@@ -222,12 +234,10 @@ export const discard = async (
     let hand;
     let index;
 
-    if (
-      wallet?.address === JSON.parse(localStorage.getItem("player_1") || "[]")
-    ) {
-      hand = JSON.parse(localStorage.getItem("player_1_hand") || "[]");
+    if (is_player_1) {
+      hand = player_1.hand;
     } else {
-      hand = JSON.parse(localStorage.getItem("player_2_hand") || "[]");
+      hand = player_2.hand;
     }
     transactionBlock.moveCall({
       target: `${MODULE_ADDRESS}::card_game::discard`,
@@ -257,19 +267,46 @@ export const discard = async (
     console.log("Discard: Success", response);
 
     // add card to graveyard
-    hand.push(id_card_to_discard);
-
-    // remove card from hand
-    index = hand.findIndex((card: string) => card === id_card_to_discard);
-    hand.splice(index, 1);
-
-    // update deck and hand in local storage
-    if (wallet?.address === "player_1") {
-      localStorage.setItem("player_1_hand", JSON.stringify(hand));
+    if (is_player_1) {
+      player_1.hand?.push(id_card_to_discard);
+      index =
+        player_1.hand?.findIndex(
+          (card: string) => card === id_card_to_discard
+        ) || 0;
+      player_1.hand?.splice(index, 1);
     } else {
-      localStorage.setItem("player_2_hand", JSON.stringify(hand));
+      player_2.hand?.push(id_card_to_discard);
+      index =
+        player_2.hand?.findIndex(
+          (card: string) => card === id_card_to_discard
+        ) || 0;
+      player_2.hand?.splice(index, 1);
     }
-    console.log("DISCARD: Updated Local Storage");
+
+    // update deck and hand in server
+    let post_response = await fetch("http://localhost:5002/api/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        player_1: {
+          address: player_1.address,
+          hand: player_1.hand,
+          deck: player_1.deck,
+        },
+        player_2: {
+          address: player_2.address,
+          hand: player_2.hand,
+          deck: player_2.deck,
+        },
+      }),
+    });
+    if (!post_response.ok) {
+      throw new Error(post_response.status.toString());
+    }
+    const result = await post_response.text();
+    console.log(result);
   } catch (error) {
     console.log(error);
   }
@@ -277,7 +314,10 @@ export const discard = async (
 export const play = async (
   wallet: Wallet | undefined,
   game_id: string,
-  id_card_to_play: string
+  id_card_to_play: string,
+  is_player_1: boolean,
+  player_1: PlayerBackend,
+  player_2: PlayerBackend
 ) => {
   if (!wallet) return;
   try {
@@ -294,12 +334,10 @@ export const play = async (
     let hand;
 
     // find id of card to play in localStorage
-    if (
-      wallet?.address === JSON.parse(localStorage.getItem("player_1") || "[]")
-    ) {
-      hand = JSON.parse(localStorage.getItem("player_1_hand") || "[]");
+    if (is_player_1) {
+      hand = player_1.hand;
     } else {
-      hand = JSON.parse(localStorage.getItem("player_2_hand") || "[]");
+      hand = player_2.hand;
     }
     // generate comittment from hand
 
@@ -331,17 +369,42 @@ export const play = async (
     });
     console.log("Play Response: Success\n", response);
     // remove card from hand
-    index = hand.findIndex((card: string) => card === id_card_to_play);
-    hand.splice(index, 1);
-
-    // contract will update board
-    // update deck and hand in local storage
-    if (wallet?.address === "player_1") {
-      localStorage.setItem("player_1_hand", JSON.stringify(hand));
+    if (is_player_1) {
+      index =
+        player_1.hand?.findIndex((card: string) => card === id_card_to_play) ||
+        0;
+      player_1.hand?.splice(index, 1);
     } else {
-      localStorage.setItem("player_2_hand", JSON.stringify(hand));
+      index =
+        player_2.hand?.findIndex((card: string) => card === id_card_to_play) ||
+        0;
+      player_2.hand?.splice(index, 1);
     }
-    console.log("PLAY: Updated Local Storage");
+
+    // update deck and hand in server
+    let post_response = await fetch("http://localhost:5002/api/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        player_1: {
+          address: player_1.address,
+          hand: player_1.hand,
+          deck: player_1.deck,
+        },
+        player_2: {
+          address: player_2.address,
+          hand: player_2.hand,
+          deck: player_2.deck,
+        },
+      }),
+    });
+    if (!post_response.ok) {
+      throw new Error(post_response.status.toString());
+    }
+    const result = await post_response.text();
+    console.log(result);
   } catch (error) {
     console.log(error);
   }

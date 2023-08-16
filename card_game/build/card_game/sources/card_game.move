@@ -171,7 +171,7 @@ module card_game::card_game {
         public_inputs_bytes: vector<u8>, 
         proof_points_bytes: vector<u8>,
         new_hand_commitment: vector<u8>,
-        ctx: &mut TxContext): (u64, u64, u64, u64){
+        ctx: &mut TxContext) {
         let (attacking_player, defending_player) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
@@ -181,8 +181,6 @@ module card_game::card_game {
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size + 1;
         attacking_player.deck_size = attacking_player.deck_size - 1;
-        (attacking_player.hand_size, attacking_player.deck_size, 
-        defending_player.hand_size, defending_player.deck_size)
     }
 
     public fun discard(
