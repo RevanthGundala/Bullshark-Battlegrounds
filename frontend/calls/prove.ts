@@ -17,7 +17,7 @@ function poseidonHash(poseidon: any, inputs: BigNumberish[]): string {
   return bytes32;
 }
 
-export const prove = async (witness, func_name) => {
+export const prove = async (witness: any, func_name: string) => {
   // draw or play
   const wasmPath = `/zkproof/${func_name}.wasm`;
   const zkeyPath = `/zkproof/${func_name}_0001.zkey`;

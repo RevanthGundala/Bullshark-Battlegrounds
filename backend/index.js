@@ -33,6 +33,7 @@ function initialize() {
   app.post(`/api/post/`, async (req, res) => {
     try {
       const { player_1, player_2 } = req.body;
+      console.log(player_1.deck);
       player1.address = player_1.address;
       player1.hand = player_1.hand;
       player1.deck = player_1.deck;

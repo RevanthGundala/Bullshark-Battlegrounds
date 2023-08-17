@@ -61,7 +61,6 @@ export default function Challenges() {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   console.log(wallet?.contents);
-
   const create_game = async (
     player_2_address: string,
     player_1_address: string
@@ -85,12 +84,15 @@ export default function Challenges() {
 
     if (player_2_address === wallet?.address) {
       nfts?.forEach((nft) => {
-        if (typeof nft.fields?.id === "object") {
+        if (
+          nft !== undefined &&
+          nft.type === `${MODULE_ADDRESS}::card_game::Card` &&
+          typeof nft.fields?.id === "object"
+        ) {
           id = nft.fields?.id as id;
           player_2.deck.push(id.id);
         }
       });
-      nfts = nfts?.filter((nft) => nft !== undefined);
       player_2.deck.slice(0, TOTAL_DECK_SIZE);
 
       // logic if we are player 1
@@ -98,63 +100,40 @@ export default function Challenges() {
         owner: player_1_address,
         options: { showType: true },
       });
-      console.log("p1 owned obj: " + JSON.stringify(owned_objects, null, 2));
-      console.log(
-        "p1 owned obj data: " + JSON.stringify(owned_objects?.data, null, 2)
-      );
       const filteredNfts = owned_objects?.data.filter((nft) => {
-        return nft?.data?.type === `${MODULE_ADDRESS}::card_game::Card`;
+        return (
+          nft !== undefined &&
+          nft?.data?.type === `${MODULE_ADDRESS}::card_game::Card`
+        );
       });
-      console.log("p1 filtered obj: " + JSON.stringify(filteredNfts, null, 2));
+      // console.log("p1 filtered obj: " + JSON.stringify(filteredNfts, null, 2));
       filteredNfts?.forEach((nft) => {
         player_1.deck.push(nft.data?.objectId || "");
       });
       player_1.deck.slice(0, TOTAL_DECK_SIZE);
-      console.log("p1 deck: " + player_1.deck);
-    } else if (player_1_address === wallet?.address) {
-      nfts?.forEach((nft) => {
-        if (typeof nft.fields?.id === "object") {
-          id = nft.fields?.id as id;
-          player_1.deck.push(id.id);
-        }
-      });
-      nfts = nfts?.filter((nft) => nft !== undefined);
-      player_1.deck.slice(0, TOTAL_DECK_SIZE);
-
-      owned_objects = await provider?.getOwnedObjects({
-        owner: player_2_address,
-        options: { showType: true },
-      });
-      const filteredNfts = owned_objects?.data.filter((nft) => {
-        return nft?.data?.type === `${MODULE_ADDRESS}::card_game::Card`;
-      });
-      filteredNfts?.forEach((nft) => {
-        player_2.deck.push(nft.data?.objectId || "");
-      });
-
-      player_2.deck.slice(0, TOTAL_DECK_SIZE);
     }
-
-    player_1.deck.forEach((id) => console.log("p1 deck id: " + id));
-    player_2.deck.forEach((id) => console.log("p2 deck id: " + id));
 
     // move cards from deck to hand in random way
-    for (let i = 0; i < MAX_HAND_SIZE; i++) {
+    while (player_1.hand.length < MAX_HAND_SIZE) {
       let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
-      player_1.hand.push(player_1.deck[index]);
+      if (player_1.deck[index] !== undefined) {
+        player_1.hand.push(player_1.deck[index]);
+      }
       player_1.deck.splice(index, 1);
     }
-    for (let i = 0; i < MAX_HAND_SIZE; i++) {
+    while (player_2.hand.length < MAX_HAND_SIZE) {
       let index: number = Math.floor(Math.random() * TOTAL_DECK_SIZE);
-      player_2.hand.push(player_2.deck[index]);
+      if (player_2.deck[index] !== undefined) {
+        player_2.hand.push(player_2.deck[index]);
+      }
       player_2.deck.splice(index, 1);
     }
 
-    player_1.hand = player_1.hand.filter((id) => id !== undefined);
-    player_2.hand = player_2.hand.filter((id) => id !== undefined);
+    // player_1.hand = player_1.hand.filter((id) => id !== undefined);
+    // player_2.hand = player_2.hand.filter((id) => id !== undefined);
 
-    player_1.hand.forEach((id) => console.log("p1 hand id: " + id));
-    player_2.hand.forEach((id) => console.log("p2 hand id: " + id));
+    // player_1.hand.forEach((id) => console.log("p1 hand id: " + id));
+    // player_2.hand.forEach((id) => console.log("p2 hand id: " + id));
 
     // get card objects from ids
     player_1.deck.map(async (id: string) => {
@@ -176,6 +155,11 @@ export default function Challenges() {
       (await provider?.getObject({ id: id, options: { showContent: true } }))
         ?.data?.content;
     });
+
+    console.log("p1 hand: " + player_1.hand.length);
+    console.log("p2 hand: " + player_2.hand.length);
+    console.log("p1 deck: " + player_1.deck.length);
+    console.log("p2 deck: " + player_2.deck.length);
 
     const response = await fetch("http://localhost:5002/api/post", {
       method: "POST",
@@ -214,9 +198,6 @@ export default function Challenges() {
               }
 
               if (player2) {
-                // console.log(object);
-                // await create_game(player2.fields?.addr, wallet.address);
-                console.log(object.objectId);
                 router.push("/game/" + object.objectId);
               }
             }
@@ -228,7 +209,7 @@ export default function Challenges() {
       }
     };
     fetchData();
-  }, []);
+  }, [challenges]);
 
   return (
     <Box textAlign="center">

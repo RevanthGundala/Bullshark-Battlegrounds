@@ -1,17 +1,8 @@
 export const MODULE_ADDRESS =
-  "0x2533224c36bdc1d6338375733bae3f0a3c86578b11eb778d488b38da26db2021";
+  "0x0ca93a740caafc7c93d54b898d17e5d5d7c205f36d1738ac9461e6dc75d9efe6";
 export const MAX_HAND_SIZE = 6;
 export const STARTING_DECK_SIZE = 4;
 export const TOTAL_DECK_SIZE = 10;
-
-export type Card = {
-  id: string;
-  name: string;
-  description: string;
-  image_url: string;
-  attack: number;
-  defense: number;
-};
 
 export const NFTS = [
   {

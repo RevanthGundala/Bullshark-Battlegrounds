@@ -17,7 +17,6 @@ import {
   MODULE_ADDRESS,
   MAX_HAND_SIZE,
   STARTING_DECK_SIZE,
-  Card,
 } from "../../../constants/index";
 import {
   draw,
@@ -36,14 +35,13 @@ export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
 
   const [isDisabled, setIsDisabled] = useState(true);
-  const [isAttacking, setisAttacking] = useState(false);
   const [isWaitingForDiscard, setIsWaitingForDiscard] =
     useState<boolean>(false);
   const [isWaitingForPlay, setIsWaitingForPlay] = useState(false);
   const [isWaitingForAttack, setIsWaitingForAttack] = useState(false);
 
   const [is_player_1, setIs_player_1] = useState(false);
-  const [is_player_1_turn, setIs_player_1_turn] = useState(true); // todo: change later - should just be true on first render
+  const [is_player_1_turn, setIs_player_1_turn] = useState(false);
 
   const [player_1, setPlayer_1] = useState<PlayerObject>();
   const [player_2, setPlayer_2] = useState<PlayerObject>();
@@ -79,7 +77,160 @@ export default function GamePage() {
     deck: string[];
   }
 
-  // first render, it will be player 1 turn
+  type Card = {
+    id: string;
+    name: string;
+    description: string;
+    attack: string;
+    defense: string;
+  };
+
+  async function game_start() {
+    const response = await fetch("http://localhost:5002/api/get", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const players = await response.json();
+    let p1_addr = players.player_1.address;
+    let p2_addr = players.player_2.address;
+
+    setIs_player_1(p1_addr === wallet?.address);
+    setIs_player_1_turn(p1_addr === wallet?.address);
+
+    // 1. fetch game struct
+    let objects;
+    let game_objects;
+    let game;
+    if (is_player_1_turn) {
+      // get game struct from player 1
+      objects = await provider?.getOwnedObjects({
+        owner: p1_addr !== undefined ? p1_addr : "",
+        options: {
+          showType: true,
+          showContent: true,
+        },
+      });
+    } else {
+      // get game struct from player 2
+      objects = await provider?.getOwnedObjects({
+        owner: p2_addr !== undefined ? p2_addr : "",
+        options: {
+          showType: true,
+          showContent: true,
+        },
+      });
+    }
+
+    game_objects = objects?.data?.filter(
+      (object) => object.data?.type === `${MODULE_ADDRESS}::card_game::Game`
+    );
+    game = game_objects?.find(
+      (object) => object.data?.objectId === (router.query.game_id as string)
+    );
+
+    let p1_contract;
+    let p2_contract;
+    if (game) {
+      if (
+        game.data?.content &&
+        "fields" in game.data?.content &&
+        game.data?.content?.fields
+      ) {
+        p1_contract = game.data.content.fields.player_1.fields;
+        // console.log(JSON.stringify(p1_contract, null, 2));
+        p2_contract = game.data.content.fields.player_2.fields;
+      }
+
+      players.player_1.deck.forEach(async (id: string) => {
+        let card: any = (
+          await provider?.getObject({ id: id, options: { showContent: true } })
+        )?.data?.content;
+        player_1?.deck?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      });
+
+      players.player_1.hand.forEach(async (id: string) => {
+        let card: any = (
+          await provider?.getObject({ id: id, options: { showContent: true } })
+        )?.data?.content;
+        player_1?.hand?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      });
+
+      players.player_2.deck.forEach(async (id: string) => {
+        let card: any = (
+          await provider?.getObject({ id: id, options: { showContent: true } })
+        )?.data?.content;
+        player_2?.deck?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      });
+
+      players.player_2.hand.forEach(async (id: string) => {
+        let card: any = (
+          await provider?.getObject({ id: id, options: { showContent: true } })
+        )?.data?.content;
+        player_2?.hand?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      });
+
+      // fill in struct fields for each player
+      if (p1_contract && p2_contract) {
+        let player1: PlayerObject = {
+          address: p1_addr,
+          board: p1_contract?.board || [],
+          deck_commitment: p1_contract?.deck_commitment || "",
+          deck_size: p1_contract?.deck_size,
+          graveyard: p1_contract?.graveyard || [],
+          hand_commitment: p1_contract?.hand_commitment,
+          hand_size: p1_contract.hand_size,
+          id: p1_contract.id.id,
+          life: p1_contract.life,
+          deck: player_1?.deck || [],
+          hand: player_1?.hand || [],
+        };
+        let player2: PlayerObject = {
+          address: p2_addr,
+          board: p2_contract?.board || [],
+          deck_commitment: p2_contract.deck_commitment,
+          deck_size: p2_contract.deck_size,
+          graveyard: p2_contract?.graveyard || [],
+          hand_commitment: p2_contract.hand_commitment,
+          hand_size: p2_contract.hand_size,
+          id: p2_contract.id.id,
+          life: p2_contract.life,
+          deck: player_2?.deck || [],
+          hand: player_2?.hand || [],
+        };
+
+        setPlayer_1(player1);
+        setPlayer_2(player2);
+        console.log("p1 " + JSON.stringify(player_1, null, 2));
+        console.log("p2 " + JSON.stringify(player_2, null, 2));
+      }
+    }
+  }
 
   async function update_board_state() {
     // get fields from backend
@@ -92,8 +243,6 @@ export default function GamePage() {
     const players = await response.json();
     let p1_addr = players.player_1.address;
     let p2_addr = players.player_2.address;
-
-    setIs_player_1(p1_addr === wallet?.address);
     // get rest of fields from contract
 
     // 1. fetch game struct
@@ -140,6 +289,68 @@ export default function GamePage() {
         p2_contract = game.data.content.fields.player_2.fields;
       }
     }
+
+    players.player_1.deck.forEach(async (id: string) => {
+      let card: any = (
+        await provider?.getObject({ id: id, options: { showContent: true } })
+      )?.data?.content;
+
+      if (!player_1?.deck?.find((card: Card) => card.id === id)) {
+        player_1?.deck?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      }
+    });
+
+    players.player_1.hand.forEach(async (id: string) => {
+      let card: any = (
+        await provider?.getObject({ id: id, options: { showContent: true } })
+      )?.data?.content;
+      if (!player_1?.hand?.find((card: Card) => card.id === id)) {
+        player_1?.hand?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      }
+    });
+
+    players.player_2.deck.forEach(async (id: string) => {
+      let card: any = (
+        await provider?.getObject({ id: id, options: { showContent: true } })
+      )?.data?.content;
+      if (!player_2?.deck?.find((card: Card) => card.id === id)) {
+        player_2?.deck?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      }
+    });
+
+    players.player_2.hand.forEach(async (id: string) => {
+      let card: any = (
+        await provider?.getObject({ id: id, options: { showContent: true } })
+      )?.data?.content;
+      if (!player_2?.hand?.find((card: Card) => card.id === id)) {
+        player_2?.hand?.push({
+          id: card.fields.id.id,
+          name: card.fields.name,
+          description: card.fields.description,
+          attack: card.fields.type.fields.attack,
+          defense: card.fields.type.fields.defense,
+        });
+      }
+    });
+
     // fill in struct fields for each player
     if (p1_contract && p2_contract) {
       let player1: PlayerObject = {
@@ -152,8 +363,8 @@ export default function GamePage() {
         hand_size: p1_contract.hand_size,
         id: p1_contract.id.id,
         life: p1_contract.life,
-        deck: players.player_1?.deck || [],
-        hand: players.player_1?.hand || [],
+        deck: player_1?.deck || [],
+        hand: player_1?.hand || [],
       };
       let player2: PlayerObject = {
         address: p2_addr,
@@ -165,14 +376,14 @@ export default function GamePage() {
         hand_size: p2_contract.hand_size,
         id: p2_contract.id.id,
         life: p2_contract.life,
-        deck: players.player_2?.deck || [],
-        hand: players.player_2?.hand || [],
+        deck: player_2?.deck || [],
+        hand: player_2?.hand || [],
       };
 
       setPlayer_1(player1);
       setPlayer_2(player2);
-      console.log("p1 " + JSON.stringify(player_1, null, 2));
-      console.log("p2 " + JSON.stringify(player_2, null, 2));
+      console.log("p1 updated: " + JSON.stringify(player_1, null, 2));
+      console.log("p2 updated: " + JSON.stringify(player_2, null, 2));
     }
   }
 
@@ -192,100 +403,78 @@ export default function GamePage() {
   }
 
   async function discard_card(card: Card) {
-    if (player_1 && player_2) {
-      let player1: PlayerBackend = {
-        address: player_1.address,
-        hand: player_1.hand?.map((card: Card) => card.id) || [],
-        deck: player_1.deck?.map((card: Card) => card.id) || [],
-      };
-      let player2: PlayerBackend = {
-        address: player_2.address,
-        hand: player_2.hand?.map((card: Card) => card.id) || [],
-        deck: player_2.deck?.map((card: Card) => card.id) || [],
-      };
+    if (isWaitingForDiscard) {
+      if (player_1 && player_2) {
+        let player1: PlayerBackend = {
+          address: player_1.address,
+          hand: player_1.hand?.map((card: Card) => card.id) || [],
+          deck: player_1.deck?.map((card: Card) => card.id) || [],
+        };
+        let player2: PlayerBackend = {
+          address: player_2.address,
+          hand: player_2.hand?.map((card: Card) => card.id) || [],
+          deck: player_2.deck?.map((card: Card) => card.id) || [],
+        };
 
-      await discard(
-        wallet,
-        router.query.game_id as string,
-        card.id || "1",
-        is_player_1,
-        player1,
-        player2
-      );
+        await discard(
+          wallet,
+          router.query.game_id as string,
+          card.id || "1",
+          is_player_1,
+          player1,
+          player2
+        );
+      }
+      await update_board_state();
+      setIsWaitingForDiscard(false);
     }
-    await update_board_state();
-    setIsWaitingForDiscard(false);
   }
 
   async function play_card(card: Card) {
-    if (player_1 && player_2) {
-      let player1: PlayerBackend = {
-        address: player_1.address,
-        hand: player_1.hand?.map((card: Card) => card.id) || [],
-        deck: player_1.deck?.map((card: Card) => card.id) || [],
-      };
-      let player2: PlayerBackend = {
-        address: player_2.address,
-        hand: player_2.hand?.map((card: Card) => card.id) || [],
-        deck: player_2.deck?.map((card: Card) => card.id) || [],
-      };
+    if (isWaitingForPlay) {
+      if (player_1 && player_2) {
+        let player1: PlayerBackend = {
+          address: player_1.address,
+          hand: player_1.hand?.map((card: Card) => card.id) || [],
+          deck: player_1.deck?.map((card: Card) => card.id) || [],
+        };
+        let player2: PlayerBackend = {
+          address: player_2.address,
+          hand: player_2.hand?.map((card: Card) => card.id) || [],
+          deck: player_2.deck?.map((card: Card) => card.id) || [],
+        };
 
-      await play(
-        wallet,
-        router.query.game_id as string,
-        card.id || "1",
-        is_player_1,
-        player1,
-        player2
-      );
+        await play(
+          wallet,
+          router.query.game_id as string,
+          card.id || "1",
+          is_player_1,
+          player1,
+          player2
+        );
+      }
+      await update_board_state();
+      setIsWaitingForPlay(false);
     }
-    await update_board_state();
-    setIsWaitingForPlay(false);
   }
 
   async function attack_opponent() {
-    setIsWaitingForAttack(true);
     if (is_player_1) {
       if (selected_cards_to_attack && selected_cards_to_defend) {
-        let game_over = await attack(
-          wallet,
-          router.query.game_id as string,
-          selected_cards_to_attack.map((character: Card) => character.id), // attacking character ids
-          selected_cards_to_defend.map((character: Card) => character.id),
-          directPlayerAttacks
+        setDirectPlayerAttacks(
+          selected_cards_to_attack.length - selected_cards_to_defend.length
         );
-        await update_board_state();
-        if (game_over) {
-          window.alert("You won!");
-          router.push("/");
-        }
       }
     } else {
       if (selected_cards_to_attack && selected_cards_to_defend) {
         setDirectPlayerAttacks(
           selected_cards_to_attack.length - selected_cards_to_defend.length
         );
-        let game_over = await attack(
-          wallet,
-          router.query.game_id as string,
-          selected_cards_to_attack.map((character: Card) => character.id), // attacking character ids
-          selected_cards_to_defend.map((character: Card) => character.id),
-          directPlayerAttacks
-        );
-        await update_board_state();
-        if (game_over) {
-          window.alert("You won!");
-          router.push("/");
-        }
       }
     }
-    setIsWaitingForAttack(false);
   }
 
   async function turn_logic() {
-    setisAttacking(true);
-    await update_board_state();
-
     if (is_player_1_turn) {
       if (is_player_1) {
         setIsDisabled(false);
@@ -307,6 +496,7 @@ export default function GamePage() {
             player1,
             player2
           );
+          await update_board_state();
         }
         if (player_1 && player_1.hand && player_1.hand.length > MAX_HAND_SIZE) {
           setIsWaitingForDiscard(true);
@@ -318,14 +508,12 @@ export default function GamePage() {
           setIsWaitingForAttack(true);
         }
         if (!isWaitingForAttack) {
-          setisAttacking(false);
-        }
-      } else {
-        setIsDisabled(true);
-        if (!isAttacking) {
-          await update_board_state();
           setIs_player_1_turn(false);
         }
+      }
+      // player 2 when p1s turn
+      else {
+        setIsDisabled(true);
       }
     }
     // player 2's turn
@@ -361,21 +549,34 @@ export default function GamePage() {
           setIsWaitingForAttack(true);
         }
         if (!isWaitingForAttack) {
-          setisAttacking(false);
+          setIs_player_1_turn(true);
         }
       } else {
         setIsDisabled(true);
-        if (!isAttacking) {
-          await update_board_state();
-          setIs_player_1_turn(true);
-        }
       }
     }
   }
 
   useEffect(() => {
-    update_board_state();
+    game_start();
   }, []);
+
+  useEffect(() => {
+    update_board_state();
+  }, [player_1, player_2, is_player_1_turn]);
+
+  function update_is_attacking() {
+    setIsWaitingForAttack(false);
+  }
+
+  useEffect(() => {
+    turn_logic();
+  }, [
+    isWaitingForAttack,
+    isWaitingForDiscard,
+    isWaitingForPlay,
+    is_player_1_turn,
+  ]);
 
   return (
     <>
@@ -417,7 +618,13 @@ export default function GamePage() {
                 <div className="w-full h-full p-2 bg-green-800 "></div>
                 {player_2?.hand?.map((card: Card, index: number) => (
                   <div key={index} className="w-full h-full p-2 bg-green-800">
-                    <Image src="/images/cards/back.jpeg" alt="card" />
+                    <div style={{ height: "100%" }}>
+                      <Image
+                        src="/images/cards/back.jpeg"
+                        alt="card"
+                        style={{ height: "100%" }}
+                      />
+                    </div>
                   </div>
                 ))}
                 <div className="w-full h-full p-2 bg-green-800 "></div>
@@ -436,12 +643,13 @@ export default function GamePage() {
                           onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
-                            border: isWaitingForAttack
+                            border: selected_cards_to_defend?.includes(card)
                               ? "2px solid red"
                               : "none",
                             background: "none",
                             cursor: "pointer",
                           }}
+                          isDisabled={!isWaitingForAttack}
                         >
                           <Image src="/images/cards/front.png" alt="shark" />
                         </Button>
@@ -466,6 +674,10 @@ export default function GamePage() {
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
+                      wallet={wallet}
+                      router={router}
+                      selected_cards_to_attack={selected_cards_to_attack}
+                      selected_cards_to_defend={selected_cards_to_defend}
                     />
                   </div>
                   <div className="flex justify-center ">
@@ -493,12 +705,13 @@ export default function GamePage() {
                           onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
-                            border: isWaitingForAttack
+                            border: selected_cards_to_attack?.includes(card)
                               ? "2px solid red"
                               : "none",
                             background: "none",
                             cursor: "pointer",
                           }}
+                          isDisabled={!isWaitingForAttack}
                         >
                           <Image src="/images/cards/front.png" alt="shark" />
                         </Button>
@@ -512,16 +725,20 @@ export default function GamePage() {
                   <div key={index} className="w-full h-full p-2 bg-blue-800">
                     <Tooltip
                       placement="bottom"
-                      label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      label={`Card Name: ${card.name}\n
+                      Card Description: ${card.description}\n
+                      Attack: ${card.attack}\n
+                      Defense: ${card.defense}`}
                     >
                       <Button
                         onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                         className="w-full h-full p-0 hover:border-red-500"
                         style={{
-                          border: isWaitingForAttack ? "2px solid red" : "none",
+                          border: "none",
                           background: "none",
                           cursor: "pointer",
                         }}
+                        disabled={isWaitingForAttack}
                       >
                         <Image src="/images/cards/front.png" alt="shark" />
                       </Button>
@@ -567,7 +784,7 @@ export default function GamePage() {
             <div className="grid grid-rows-7 min-h-screen w-4/5 gap-2">
               {/* FIRST DIV */}
               <div className="grid grid-cols-8 w-full min-h-full bg-blue-500 gap-2 p-2 ">
-                <div className="w-full h-full p-2 bg-green-800 ">
+                <div className="w-full h-full p-2 bg-blue-800 ">
                   {player_1 && player_1.hand && player_1.hand.length > 0 ? (
                     <Image src="/images/cards/back.jpeg" alt="enemy-deck" />
                   ) : (
@@ -605,13 +822,16 @@ export default function GamePage() {
                     <div key={index} className="w-full h-full p-2 bg-blue-800">
                       <Tooltip
                         placement="bottom"
-                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                        label={`Card Name: ${card.name}\n
+                        Card Description: ${card.description}\n
+                        Attack: ${card.attack}\n
+                        Defense: ${card.defense}`}
                       >
                         <Button
                           onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
-                            border: isWaitingForAttack
+                            border: selected_cards_to_defend?.includes(card)
                               ? "2px solid red"
                               : "none",
                             background: "none",
@@ -641,6 +861,10 @@ export default function GamePage() {
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
+                      wallet={wallet}
+                      router={router}
+                      selected_cards_to_attack={selected_cards_to_attack}
+                      selected_cards_to_defend={selected_cards_to_defend}
                     />
                   </div>
                   <div className="flex justify-center ">
@@ -667,12 +891,13 @@ export default function GamePage() {
                           onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
-                            border: isWaitingForAttack
+                            border: selected_cards_to_attack?.includes(card)
                               ? "2px solid red"
                               : "none",
                             background: "none",
                             cursor: "pointer",
                           }}
+                          disabled={!isWaitingForAttack}
                         >
                           <Image src="/images/cards/front.png" alt="shark" />
                         </Button>
@@ -686,16 +911,20 @@ export default function GamePage() {
                   <div key={index} className="w-full h-full p-2 bg-green-800">
                     <Tooltip
                       placement="bottom"
-                      label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
+                      label={`Card Name: ${card.name}\n
+                      Card Description: ${card.description}\n
+                      Attack: ${card.attack}\n
+                      Defense: ${card.defense}`}
                     >
                       <Button
                         onClick={() => handleCardClick(card)} // Replace with your onClick handler function
                         className="w-full h-full p-0 hover:border-red-500"
                         style={{
-                          border: isWaitingForAttack ? "2px solid red" : "none",
+                          border: "none",
                           background: "none",
                           cursor: "pointer",
                         }}
+                        isDisabled={isWaitingForAttack}
                       >
                         <Image src="/images/cards/front.png" alt="shark" />
                       </Button>
@@ -717,8 +946,14 @@ export default function GamePage() {
                 </div>
                 <div className="w-full h-full p-2 bg-green-800 "></div>
                 <div className="w-full h-full p-2 bg-green-800 "></div>
-                <div className="w-full h-full p-2 bg-green-800 "></div>
-                <div className="w-full h-full p-2 bg-green-800 "></div>
+                <div className="w-full h-full p-2 bg-green-800 ">
+                  {" "}
+                  {player_2 && player_2.deck && player_2.deck.length > 0 ? (
+                    <Image src="/images/cards/back.jpeg" alt="your-deck" />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
               </div>
             </div>
           </div>
