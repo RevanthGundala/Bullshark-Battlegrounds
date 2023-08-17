@@ -60,7 +60,7 @@ export default function Challenges() {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
-  console.log(wallet?.contents);
+
   const create_game = async (
     player_2_address: string,
     player_1_address: string
@@ -183,13 +183,19 @@ export default function Challenges() {
       try {
         setIsLoading(true);
         wallet?.contents?.objects?.forEach(async (object) => {
-          if (object.type === `${MODULE_ADDRESS}::card_game::Challenge`) {
+          if (
+            object.type === `${MODULE_ADDRESS}::card_game::Challenge` &&
+            !challenges.includes(object.objectId) &&
+            !challengers.includes(object.fields?.challenger || "")
+          ) {
+            console.log("New challenge");
             challenges.push(object.objectId);
             challengers.push(object.fields?.challenger || "");
           }
           // they accepted our challenge -> player 2 accepts always
           // check if we own a game object = game started-> router.push
           else if (object.type === `${MODULE_ADDRESS}::card_game::Game`) {
+            console.log("found");
             if (wallet && object.fields?.player_2) {
               let player2: PlayerContract | undefined;
 

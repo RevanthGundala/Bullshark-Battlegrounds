@@ -194,7 +194,7 @@ module card_game::card_game {
         proof_points_bytes: vector<u8>,
         card_to_discard: Card,
         new_hand_commitment: vector<u8>,
-        ctx: &mut TxContext): &vector<Card>{
+        ctx: &mut TxContext) {
         let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
@@ -202,7 +202,6 @@ module card_game::card_game {
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.graveyard, card_to_discard);
-        &attacking_player.graveyard
     }
 
     public fun play(
@@ -378,8 +377,7 @@ module card_game::card_game {
     /// Private Functions ///
     /////////////////////////
     
-    // public for testing only
-    public fun end_game(game: Game, winner: address) {
+    fun end_game(game: Game, winner: address) {
         event::emit(GameOver{
             id: object::uid_to_inner(&game.id),
             winner: winner

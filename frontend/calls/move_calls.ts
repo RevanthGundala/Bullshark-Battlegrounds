@@ -1,10 +1,5 @@
 import { Chain, TransactionBlock, Wallet } from "ethos-connect";
-import {
-  MODULE_ADDRESS,
-  MAX_HAND_SIZE,
-  TOTAL_DECK_SIZE,
-  Card,
-} from "../constants";
+import { MODULE_ADDRESS, MAX_HAND_SIZE, TOTAL_DECK_SIZE } from "../constants";
 import { get_object_ids, listen_for_events } from "./api_calls";
 import { NextRouter } from "next/router";
 import { NFTS } from "../constants";
@@ -545,20 +540,20 @@ export const surrender = async (
 //   return preapproval;
 // };
 
-export const generate_draw_proof_with_rust = async () => {
-  try {
-    let draw_proof: Proof = await generate_draw_proof();
-    return draw_proof;
-  } catch (error) {
-    console.log(error);
-  }
-};
+// export const generate_draw_proof_with_rust = async () => {
+//   try {
+//     let draw_proof: Proof = await generate_draw_proof();
+//     return draw_proof;
+//   } catch (error) {
+//     console.log(error);
+//   }
+// };
 
-export const generate_discard_proof_with_rust = async () => {
-  try {
-    let discard_proof: Proof = await generate_discard_proof();
-    return discard_proof;
-  } catch (error) {
-    console.log(error);
-  }
-};
+// export const generate_discard_proof_with_rust = async () => {
+//   try {
+//     let discard_proof: Proof = await generate_discard_proof();
+//     return discard_proof;
+//   } catch (error) {
+//     console.log(error);
+//   }
+// };

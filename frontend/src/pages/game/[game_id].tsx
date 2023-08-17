@@ -23,7 +23,6 @@ import {
   discard,
   play,
   attack,
-  generate_discard_proof_with_rust,
   Proof,
   surrender,
   end_turn,
@@ -458,22 +457,6 @@ export default function GamePage() {
     }
   }
 
-  async function attack_opponent() {
-    if (is_player_1) {
-      if (selected_cards_to_attack && selected_cards_to_defend) {
-        setDirectPlayerAttacks(
-          selected_cards_to_attack.length - selected_cards_to_defend.length
-        );
-      }
-    } else {
-      if (selected_cards_to_attack && selected_cards_to_defend) {
-        setDirectPlayerAttacks(
-          selected_cards_to_attack.length - selected_cards_to_defend.length
-        );
-      }
-    }
-  }
-
   async function turn_logic() {
     if (is_player_1_turn) {
       if (is_player_1) {
@@ -557,17 +540,15 @@ export default function GamePage() {
     }
   }
 
-  useEffect(() => {
-    game_start();
-  }, []);
+  // useEffect(() => {
+  //   console.log("Game start");
+  //   game_start();
+  // }, []);
 
   useEffect(() => {
+    console.log("update board state");
     update_board_state();
-  }, [player_1, player_2, is_player_1_turn]);
-
-  function update_is_attacking() {
-    setIsWaitingForAttack(false);
-  }
+  }, [is_player_1_turn]);
 
   useEffect(() => {
     turn_logic();
