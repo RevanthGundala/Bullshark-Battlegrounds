@@ -25,8 +25,6 @@ import {
   TOTAL_DECK_SIZE,
 } from "../constants/index";
 import { accept_challenge, draw } from "../calls/move_calls";
-import { get_object_ids } from "../calls/api_calls";
-import { get_object_from_id } from "../calls/api_calls";
 // import { useSuiProvider } from "@suiet/wallet";
 
 interface PlayerContract {
@@ -237,8 +235,10 @@ export default function Challenges() {
                   onClick={async () => {
                     let game_id = await accept_challenge(wallet, challenge);
                     if (wallet) {
+                      console.log("creating game");
                       await create_game(wallet.address, challengers[index]);
                     }
+                    console.log("game_id: ", game_id);
                     router.push("/game/" + game_id);
                   }}
                 >

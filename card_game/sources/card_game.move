@@ -159,8 +159,6 @@ module card_game::card_game {
         object::delete(id);
     }
 
-    // use vrf to get random index
-    // TODO: Figure out how to hide card in hand
     public fun draw(
         game: &mut Game, 
         output: vector<u8>, 
@@ -174,6 +172,8 @@ module card_game::card_game {
         ctx: &mut TxContext) {
         let (attacking_player, defending_player) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
+        // comment for testing
+        
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
 

@@ -3,6 +3,9 @@ import { MODULE_ADDRESS, MAX_HAND_SIZE, TOTAL_DECK_SIZE } from "../constants";
 import { get_object_ids, listen_for_events } from "./api_calls";
 import { NextRouter } from "next/router";
 import { NFTS } from "../constants";
+import { poseidonHash, prove } from "./prove";
+// @ts-ignore
+import { buildPoseidon } from "circomlibjs";
 
 export type Proof = {
   public_inputs_bytes: string | undefined;
@@ -41,6 +44,13 @@ export const get_new_character = async (wallet: Wallet | undefined) => {
         showObjectChanges: true,
       },
     });
+    // const poseidon = await buildPoseidon();
+    // const input = poseidonHash(poseidon, [7]);
+    // const witness = {
+    //   in: input,
+    // };
+    // const solProof = await prove(witness, "draw");
+    // console.log(solProof);
     console.log("Get New Character Response", response);
   } catch (error) {
     console.log(error);

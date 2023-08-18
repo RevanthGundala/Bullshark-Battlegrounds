@@ -21,6 +21,7 @@
     "@types/react": "18.2.18",
     "@types/react-dom": "18.2.7",
     "@uidotdev/usehooks": "^2.1.0",
+    "circomlibjs": "^0.1.7",
     "eth-crypto": "^2.6.0",
     "ethers": "^6.7.1",
     "ethos": "^0.0.1",
@@ -40,5 +41,8 @@
     "autoprefixer": "^10.4.15",
     "postcss": "^8.4.27",
     "tailwindcss": "^3.3.3"
+  },
+  "browser": {
+    "fs": false
   }
 }

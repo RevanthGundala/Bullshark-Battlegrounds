@@ -1,19 +1,20 @@
 // @ts-ignore
 import { groth16 } from "snarkjs";
 // @ts-ignore
-import { Contract, ContractFactory, BigNumberish, utils } from "ethers";
-// @ts-ignore
-import { poseidonContract, buildPoseidon } from "circomlibjs";
+import { BigNumberish, ethers, utils } from "ethers";
+
 import { BigNumber } from "@ethersproject/bignumber";
 
-function poseidonHash(poseidon: any, inputs: BigNumberish[]): string {
+export function poseidonHash(poseidon: any, inputs: BigNumberish[]): string {
   const hash = poseidon(inputs.map((x) => BigNumber.from(x).toBigInt()));
   // Make the number within the field size
   const hashStr = poseidon.F.toString(hash);
   // Make it a valid hex string
   const hashHex = BigNumber.from(hashStr).toHexString();
   // pad zero to make it 32 bytes, so that the output can be taken as a bytes32 contract argument
-  const bytes32 = utils.hexZeroPad(hashHex, 32);
+  console.log("hashehx");
+  console.log(hashHex);
+  const bytes32 = ethers.utils.hexZeroPad(hashHex, 32);
   return bytes32;
 }
 
