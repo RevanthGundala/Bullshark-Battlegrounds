@@ -1,8 +1,7 @@
-// This is the currently implemented contract
-// Transfers game between players on each turn
-// Player's turn is determined by who owns the object
+// Uses a shared object, and transfers cap to each player
+// Player's turn is determined by object itself
 
-module card_game::card_game {
+module card_game::card_gamev2 {
     use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::url::{Self, Url};
@@ -34,7 +33,8 @@ module card_game::card_game {
     struct Game has key, store{
         id: UID,
         player_1: Player,
-        player_2: Player
+        player_2: Player,
+        cur_turn: u8,
     }
 
     struct Player has key, store{
@@ -115,7 +115,7 @@ module card_game::card_game {
             challenger: tx_context::sender(ctx),
             opponent: opponent,
         };
-        transfer::transfer(challenge, opponent);
+        transfer::share_object(challenge);
     }
 
     public fun accept_challenge(challenge: Challenge, ctx: &mut TxContext) {
@@ -154,10 +154,11 @@ module card_game::card_game {
         let game = Game{
             id: object::new(ctx),
             player_1: player_1,
-            player_2: player_2
+            player_2: player_2,
+            cur_turn: 0
         };
 
-        transfer::transfer(game, challenge.challenger);
+        transfer::share_object(game);
 
         let Challenge {id, challenger: _, opponent: _ } = challenge;
         object::delete(id);
@@ -174,10 +175,11 @@ module card_game::card_game {
         proof_points_bytes: vector<u8>,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
+        assert!(get_cur_turn_address(game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (attacking_player, defending_player) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
         // comment for testing
-
+        
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
 
@@ -199,6 +201,7 @@ module card_game::card_game {
         card_to_discard: Card,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
+            assert!(get_cur_turn_address(game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
@@ -220,6 +223,7 @@ module card_game::card_game {
         card_to_play: Card,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
+            assert!(get_cur_turn_address(game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (attacking_player, _) = get_players(game, ctx);
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EINVALID_PROOF);
@@ -239,6 +243,7 @@ module card_game::card_game {
     defending_characters: vector<Card>, 
     direct_player_attacks: u64, 
     ctx: &mut TxContext){
+        assert!(get_cur_turn_address(&game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
         let attacking_size = vector::length<Card>(&attacking_characters);
@@ -341,6 +346,7 @@ module card_game::card_game {
     }
 
     public fun end_turn(game: Game, ctx: &mut TxContext) {
+        assert!(get_cur_turn_address(&game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (_, defending_player) = get_players(&mut game, ctx);
         let defending_player_address = defending_player.addr;
         transfer::transfer(game, defending_player_address);
@@ -391,6 +397,7 @@ module card_game::card_game {
             id: game_id,
             player_1: player_1,
             player_2: player_2,
+            cur_turn: _
         } = game;
 
         let Player{
@@ -492,6 +499,17 @@ module card_game::card_game {
         object::delete(game_id);
     } 
 
+    fun get_cur_turn_address(game: &Game): address {
+        if (game.cur_turn % 2 == 0) {
+            game.player_1.addr
+        } else {
+            game.player_2.addr
+        }
+    }
+
+
+
+    // Tests
     #[test]
     public fun test_verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>) {
         assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), 0);
