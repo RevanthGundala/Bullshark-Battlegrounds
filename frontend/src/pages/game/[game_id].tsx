@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Center,
@@ -24,12 +24,10 @@ import {
   discard,
   play,
   attack,
-  generate_discard_proof_with_rust,
   Proof,
   surrender,
   end_turn,
 } from "../../../calls/move_calls";
-import { get_object_ids } from "../../../calls/api_calls";
 import State from "../../../components/State";
 
 export default function GamePage() {
@@ -44,9 +42,6 @@ export default function GamePage() {
 
   const [is_player_1, setIs_player_1] = useState(false);
   const [is_player_1_turn, setIs_player_1_turn] = useState(true); // todo: change later - should just be true on first render
-
-  const [player_1, setPlayer_1] = useState<PlayerObject>();
-  const [player_2, setPlayer_2] = useState<PlayerObject>();
 
   const [directPlayerAttacks, setDirectPlayerAttacks] = useState<number>(0);
 
@@ -81,125 +76,167 @@ export default function GamePage() {
 
   // first render, it will be player 1 turn
 
+  const [player_1, player_2] = useMemo(
+    () =>
+      update_board_state().then((result) => {
+        if (result) {
+          return result;
+        } else {
+          return { player_1: {}, player_2: {} };
+        }
+      }),
+    [is_player_1_turn]
+  );
+
   async function update_board_state() {
-    setIs_player_1_turn(true);
-    // get fields from backend
-    const response = await fetch("http://localhost:5002/api/get", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const players = await response.json();
-    let p1_addr = players.player_1.address;
-    let p2_addr = players.player_2.address;
-
-    setIs_player_1(p1_addr === wallet?.address);
-    // get rest of fields from contract
-
-    // 1. fetch game struct
-    let objects;
-    let game_objects;
-    let game;
-    if (is_player_1_turn) {
-      // get game struct from player 1
-      objects = await provider?.getOwnedObjects({
-        owner: p1_addr !== undefined ? p1_addr : "",
-        options: {
-          showType: true,
-          showContent: true,
+    try {
+      setIs_player_1_turn(true);
+      // get fields from backend
+      const response = await fetch("http://localhost:5002/api/get", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
         },
       });
-    } else {
-      // get game struct from player 2
-      objects = await provider?.getOwnedObjects({
-        owner: p2_addr !== undefined ? p2_addr : "",
-        options: {
-          showType: true,
-          showContent: true,
-        },
-      });
-    }
+      const players = await response.json();
+      let p1_addr = players.player_1.address;
+      let p2_addr = players.player_2.address;
 
-    game_objects = objects?.data?.filter(
-      (object) => object.data?.type === `${MODULE_ADDRESS}::card_game::Game`
-    );
-    game = game_objects?.find(
-      (object) => object.data?.objectId === (router.query.game_id as string)
-    );
+      setIs_player_1(p1_addr === wallet?.address);
+      // get rest of fields from contract
 
-    let p1_contract;
-    let p2_contract;
-    if (game) {
-      if (
-        game.data?.content &&
-        "fields" in game.data?.content &&
-        game.data?.content?.fields
-      ) {
-        p1_contract = game.data.content.fields.player_1.fields;
-        // console.log(JSON.stringify(p1_contract, null, 2));
-        p2_contract = game.data.content.fields.player_2.fields;
+      // 1. fetch game struct
+      let objects;
+      let game_objects;
+      let game;
+      if (is_player_1_turn) {
+        // get game struct from player 1
+        objects = await provider?.getOwnedObjects({
+          owner: p1_addr !== undefined ? p1_addr : "",
+          options: {
+            showType: true,
+            showContent: true,
+          },
+        });
+      } else {
+        // get game struct from player 2
+        objects = await provider?.getOwnedObjects({
+          owner: p2_addr !== undefined ? p2_addr : "",
+          options: {
+            showType: true,
+            showContent: true,
+          },
+        });
       }
-    }
 
-    players.player_1.hand.forEach(async (id: string) => {
-      if (id) {
-        let card: any = (
-          await provider?.getObject({ id: id, options: { showContent: true } })
-        )?.data?.content;
-        if (!player_1?.hand?.find((card: Card) => card.id === id)) {
-          player_1?.hand?.push({
-            id: card.fields.id.id,
-            name: card.fields.name,
-            description: card.fields.description,
-            attack: card.fields.type.fields.attack,
-            defense: card.fields.type.fields.defense,
-          });
+      game_objects = objects?.data?.filter(
+        (object) => object.data?.type === `${MODULE_ADDRESS}::card_game::Game`
+      );
+      game = game_objects?.find(
+        (object) => object.data?.objectId === (router.query.game_id as string)
+      );
+
+      let p1_contract;
+      let p2_contract;
+      if (game) {
+        if (
+          game.data?.content &&
+          "fields" in game.data?.content &&
+          game.data?.content?.fields
+        ) {
+          p1_contract = game.data.content.fields.player_1.fields;
+          // console.log(JSON.stringify(p1_contract, null, 2));
+          p2_contract = game.data.content.fields.player_2.fields;
         }
       }
-    });
 
-    // fill in struct fields for each player
-    if (p1_contract && p2_contract) {
-      let player1: PlayerObject = {
-        address: p1_addr,
-        board: p1_contract?.board || [],
-        deck_commitment: p1_contract?.deck_commitment || "",
-        deck_size: p1_contract?.deck_size,
-        graveyard: p1_contract?.graveyard || [],
-        hand_commitment: p1_contract?.hand_commitment,
-        hand_size: p1_contract.hand_size,
-        id: p1_contract.id.id,
-        life: p1_contract.life,
-        deck: (player_1?.deck || []).filter(
-          (card: Card) => card?.id !== undefined
-        ),
-        hand: (player_1?.hand || []).filter(
-          (card: Card) => card?.id !== undefined
-        ),
-      };
-      let player2: PlayerObject = {
-        address: p2_addr,
-        board: p2_contract?.board || [],
-        deck_commitment: p2_contract.deck_commitment,
-        deck_size: p2_contract.deck_size,
-        graveyard: p2_contract?.graveyard || [],
-        hand_commitment: p2_contract.hand_commitment,
-        hand_size: p2_contract.hand_size,
-        id: p2_contract.id.id,
-        life: p2_contract.life,
-        deck: (player_2?.deck || []).filter(
-          (card: Card) => card?.id !== undefined
-        ),
-        hand: (player_2?.hand || []).filter(
-          (card: Card) => card?.id !== undefined
-        ),
-      };
+      // convert id to Card type
+      // make sure we dont already have the card
+      players.player_1.hand.forEach(async (id: string) => {
+        if (id) {
+          let card: any = (
+            await provider?.getObject({
+              id: id,
+              options: { showContent: true },
+            })
+          )?.data?.content;
+          if (!player_1?.hand?.find((card: Card) => card.id === id)) {
+            player_1?.hand?.push({
+              id: card.fields.id.id,
+              name: card.fields.name,
+              description: card.fields.description,
+              attack: card.fields.type.fields.attack,
+              defense: card.fields.type.fields.defense,
+              image_url: card.fields.image_url,
+            });
+          }
+        }
+      });
 
-      setPlayer_1(player1);
-      setPlayer_2(player2);
-      console.log("p1 " + JSON.stringify(player_1, null, 2));
-      console.log("p2 " + JSON.stringify(player_2, null, 2));
+      players.player_2.hand.forEach(async (id: string) => {
+        if (id) {
+          let card: any = (
+            await provider?.getObject({
+              id: id,
+              options: { showContent: true },
+            })
+          )?.data?.content;
+          if (!player_2?.hand?.find((card: Card) => card.id === id)) {
+            player_2?.hand?.push({
+              id: card.fields.id.id,
+              name: card.fields.name,
+              description: card.fields.description,
+              attack: card.fields.type.fields.attack,
+              defense: card.fields.type.fields.defense,
+              image_url: card.fields.image_url,
+            });
+          }
+        }
+      });
+
+      // fill in struct fields for each player
+      if (p1_contract && p2_contract) {
+        let player1: any = {
+          address: p1_addr,
+          board: p1_contract?.board || [],
+          deck_commitment: p1_contract?.deck_commitment || "",
+          deck_size: p1_contract?.deck_size,
+          graveyard: p1_contract?.graveyard || [],
+          hand_commitment: p1_contract?.hand_commitment,
+          hand_size: p1_contract.hand_size,
+          id: p1_contract.id.id,
+          life: p1_contract.life,
+          deck: (player_1?.deck || []).filter(
+            (card: Card) => card?.id !== undefined
+          ),
+          hand: (player_1?.hand || []).filter(
+            (card: Card) => card?.id !== undefined
+          ),
+        };
+        let player2: PlayerObject = {
+          address: p2_addr,
+          board: p2_contract?.board || [],
+          deck_commitment: p2_contract.deck_commitment,
+          deck_size: p2_contract.deck_size,
+          graveyard: p2_contract?.graveyard || [],
+          hand_commitment: p2_contract.hand_commitment,
+          hand_size: p2_contract.hand_size,
+          id: p2_contract.id.id,
+          life: p2_contract.life,
+          deck: (player_2?.deck || []).filter(
+            (card: Card) => card?.id !== undefined
+          ),
+          hand: (player_2?.hand || []).filter(
+            (card: Card) => card?.id !== undefined
+          ),
+        };
+
+        console.log("p1 " + JSON.stringify(player1, null, 2));
+        console.log("p2 " + JSON.stringify(player2, null, 2));
+        return { player_1: player1, player_2: player2 };
+      }
+    } catch (err) {
+      console.log(err);
     }
   }
 
