@@ -3,13 +3,14 @@ import { attack } from "../calls/move_calls";
 import { Wallet } from "ethos-connect";
 import { NextRouter } from "next/router";
 
-type Card = {
+interface Card {
   id: string;
   name: string;
   description: string;
   attack: string;
   defense: string;
-};
+  image_url: string;
+}
 
 interface StateProps {
   isWaitingForDiscard: boolean;

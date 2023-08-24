@@ -201,7 +201,7 @@ module card_game::card_gamev2 {
         card_to_discard: Card,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
-            assert!(get_cur_turn_address(game) == tx_context::sender(ctx), ESAME_PLAYER);
+        assert!(get_cur_turn_address(game) == tx_context::sender(ctx), ESAME_PLAYER);
         let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EINVALID_HAND_SIZE);
         // assert!(verify_ecvrf_output(output, alpha_string, public_key, proof), EINVALID_VRF);

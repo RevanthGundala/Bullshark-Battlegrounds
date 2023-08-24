@@ -1,0 +1,12 @@
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/wasmer_engine_dylib-39f3a2c92834a380.rmeta: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/artifact.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/builder.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/engine.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/serialize.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/trampoline.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/wasmer_engine_dylib-39f3a2c92834a380.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/artifact.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/builder.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/engine.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/serialize.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/trampoline.rs
+
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/lib.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/artifact.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/builder.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/engine.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/serialize.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-dylib-2.3.0/src/trampoline.rs:
+
+# env-dep:CARGO_PKG_VERSION=2.3.0

@@ -102,9 +102,9 @@ cargo:rerun-if-env-changed=HOST_CFLAGS
 HOST_CFLAGS = None
 cargo:rerun-if-env-changed=CFLAGS
 CFLAGS = None
-running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-fno-builtin" "-Wno-unused-function" "-Wno-unused-command-line-argument" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/9f515ae40102a8cb-server.o" "-c" "/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/src/server.c"
+running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-fno-builtin" "-Wno-unused-function" "-Wno-unused-command-line-argument" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/9f515ae40102a8cb-server.o" "-c" "/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/src/server.c"
 exit status: 0
-running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-fno-builtin" "-Wno-unused-function" "-Wno-unused-command-line-argument" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/8d2b5639da0d27fa-assembly.o" "-c" "/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/build/assembly.S"
+running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-fno-builtin" "-Wno-unused-function" "-Wno-unused-command-line-argument" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/8d2b5639da0d27fa-assembly.o" "-c" "/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/build/assembly.S"
 exit status: 0
 cargo:rerun-if-env-changed=AR_aarch64-apple-darwin
 AR_aarch64-apple-darwin = None
@@ -122,11 +122,11 @@ cargo:rerun-if-env-changed=HOST_ARFLAGS
 HOST_ARFLAGS = None
 cargo:rerun-if-env-changed=ARFLAGS
 ARFLAGS = None
-running: ZERO_AR_DATE="1" "ar" "cq" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/libblst.a" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/9f515ae40102a8cb-server.o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/8d2b5639da0d27fa-assembly.o"
+running: ZERO_AR_DATE="1" "ar" "cq" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/libblst.a" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/9f515ae40102a8cb-server.o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/8d2b5639da0d27fa-assembly.o"
 exit status: 0
-running: "ar" "s" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out/libblst.a"
+running: "ar" "s" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out/libblst.a"
 exit status: 0
 cargo:rustc-link-lib=static=blst
-cargo:rustc-link-search=native=/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/blst-af080ef104a6f1b4/out
+cargo:rustc-link-search=native=/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/blst-af080ef104a6f1b4/out
 cargo:BINDINGS=/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/bindings
 cargo:C_SRC=/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blst-0.3.11/blst/src

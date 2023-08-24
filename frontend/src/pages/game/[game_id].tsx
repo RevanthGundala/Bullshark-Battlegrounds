@@ -17,7 +17,6 @@ import {
   MODULE_ADDRESS,
   MAX_HAND_SIZE,
   STARTING_DECK_SIZE,
-  Card,
 } from "../../../constants/index";
 import {
   draw,
@@ -45,6 +44,9 @@ export default function GamePage() {
 
   const [directPlayerAttacks, setDirectPlayerAttacks] = useState<number>(0);
 
+  const [player_1, setPlayer_1] = useState<PlayerObject>();
+  const [player_2, setPlayer_2] = useState<PlayerObject>();
+
   const [selected_cards_to_attack, setSelected_cards_to_attack] = useState<
     Card[] | null
   >(null);
@@ -52,7 +54,18 @@ export default function GamePage() {
     Card[] | null
   >(null);
 
+  const [isUpdatingActive, setIsUpdatingActive] = useState(false);
+
   const router = useRouter();
+
+  interface Card {
+    id: string;
+    name: string;
+    description: string;
+    attack: string;
+    defense: string;
+    image_url: string;
+  }
 
   interface PlayerObject {
     address: string;
@@ -72,172 +85,6 @@ export default function GamePage() {
     address: string;
     hand: string[];
     deck: string[];
-  }
-
-  // first render, it will be player 1 turn
-
-  const [player_1, player_2] = useMemo(
-    () =>
-      update_board_state().then((result) => {
-        if (result) {
-          return result;
-        } else {
-          return { player_1: {}, player_2: {} };
-        }
-      }),
-    [is_player_1_turn]
-  );
-
-  async function update_board_state() {
-    try {
-      setIs_player_1_turn(true);
-      // get fields from backend
-      const response = await fetch("http://localhost:5002/api/get", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const players = await response.json();
-      let p1_addr = players.player_1.address;
-      let p2_addr = players.player_2.address;
-
-      setIs_player_1(p1_addr === wallet?.address);
-      // get rest of fields from contract
-
-      // 1. fetch game struct
-      let objects;
-      let game_objects;
-      let game;
-      if (is_player_1_turn) {
-        // get game struct from player 1
-        objects = await provider?.getOwnedObjects({
-          owner: p1_addr !== undefined ? p1_addr : "",
-          options: {
-            showType: true,
-            showContent: true,
-          },
-        });
-      } else {
-        // get game struct from player 2
-        objects = await provider?.getOwnedObjects({
-          owner: p2_addr !== undefined ? p2_addr : "",
-          options: {
-            showType: true,
-            showContent: true,
-          },
-        });
-      }
-
-      game_objects = objects?.data?.filter(
-        (object) => object.data?.type === `${MODULE_ADDRESS}::card_game::Game`
-      );
-      game = game_objects?.find(
-        (object) => object.data?.objectId === (router.query.game_id as string)
-      );
-
-      let p1_contract;
-      let p2_contract;
-      if (game) {
-        if (
-          game.data?.content &&
-          "fields" in game.data?.content &&
-          game.data?.content?.fields
-        ) {
-          p1_contract = game.data.content.fields.player_1.fields;
-          // console.log(JSON.stringify(p1_contract, null, 2));
-          p2_contract = game.data.content.fields.player_2.fields;
-        }
-      }
-
-      // convert id to Card type
-      // make sure we dont already have the card
-      players.player_1.hand.forEach(async (id: string) => {
-        if (id) {
-          let card: any = (
-            await provider?.getObject({
-              id: id,
-              options: { showContent: true },
-            })
-          )?.data?.content;
-          if (!player_1?.hand?.find((card: Card) => card.id === id)) {
-            player_1?.hand?.push({
-              id: card.fields.id.id,
-              name: card.fields.name,
-              description: card.fields.description,
-              attack: card.fields.type.fields.attack,
-              defense: card.fields.type.fields.defense,
-              image_url: card.fields.image_url,
-            });
-          }
-        }
-      });
-
-      players.player_2.hand.forEach(async (id: string) => {
-        if (id) {
-          let card: any = (
-            await provider?.getObject({
-              id: id,
-              options: { showContent: true },
-            })
-          )?.data?.content;
-          if (!player_2?.hand?.find((card: Card) => card.id === id)) {
-            player_2?.hand?.push({
-              id: card.fields.id.id,
-              name: card.fields.name,
-              description: card.fields.description,
-              attack: card.fields.type.fields.attack,
-              defense: card.fields.type.fields.defense,
-              image_url: card.fields.image_url,
-            });
-          }
-        }
-      });
-
-      // fill in struct fields for each player
-      if (p1_contract && p2_contract) {
-        let player1: any = {
-          address: p1_addr,
-          board: p1_contract?.board || [],
-          deck_commitment: p1_contract?.deck_commitment || "",
-          deck_size: p1_contract?.deck_size,
-          graveyard: p1_contract?.graveyard || [],
-          hand_commitment: p1_contract?.hand_commitment,
-          hand_size: p1_contract.hand_size,
-          id: p1_contract.id.id,
-          life: p1_contract.life,
-          deck: (player_1?.deck || []).filter(
-            (card: Card) => card?.id !== undefined
-          ),
-          hand: (player_1?.hand || []).filter(
-            (card: Card) => card?.id !== undefined
-          ),
-        };
-        let player2: PlayerObject = {
-          address: p2_addr,
-          board: p2_contract?.board || [],
-          deck_commitment: p2_contract.deck_commitment,
-          deck_size: p2_contract.deck_size,
-          graveyard: p2_contract?.graveyard || [],
-          hand_commitment: p2_contract.hand_commitment,
-          hand_size: p2_contract.hand_size,
-          id: p2_contract.id.id,
-          life: p2_contract.life,
-          deck: (player_2?.deck || []).filter(
-            (card: Card) => card?.id !== undefined
-          ),
-          hand: (player_2?.hand || []).filter(
-            (card: Card) => card?.id !== undefined
-          ),
-        };
-
-        console.log("p1 " + JSON.stringify(player1, null, 2));
-        console.log("p2 " + JSON.stringify(player2, null, 2));
-        return { player_1: player1, player_2: player2 };
-      }
-    } catch (err) {
-      console.log(err);
-    }
   }
 
   async function handleCardClick(card: Card) {
@@ -277,7 +124,6 @@ export default function GamePage() {
         player2
       );
     }
-    await update_board_state();
     setIsWaitingForDiscard(false);
   }
 
@@ -303,7 +149,6 @@ export default function GamePage() {
         player2
       );
     }
-    await update_board_state();
     setIsWaitingForPlay(false);
   }
 
@@ -318,7 +163,6 @@ export default function GamePage() {
           selected_cards_to_defend.map((character: Card) => character.id),
           directPlayerAttacks
         );
-        await update_board_state();
         if (game_over) {
           window.alert("You won!");
           router.push("/");
@@ -336,7 +180,6 @@ export default function GamePage() {
           selected_cards_to_defend.map((character: Card) => character.id),
           directPlayerAttacks
         );
-        await update_board_state();
         if (game_over) {
           window.alert("You won!");
           router.push("/");
@@ -346,110 +189,290 @@ export default function GamePage() {
     setIsWaitingForAttack(false);
   }
 
-  async function turn_logic() {
-    setisAttacking(true);
-    await update_board_state();
-
-    if (is_player_1_turn) {
-      if (is_player_1) {
-        setIsDisabled(false);
-        if (player_1 && player_2) {
-          let player1: PlayerBackend = {
-            address: player_1.address,
-            hand: (player_1.hand || [])
-              .filter((card: Card) => card.id !== undefined)
-              .map((card: Card) => card.id),
-            deck: (player_1.deck || [])
-              .filter((card: Card) => card.id !== undefined)
-              .map((card: Card) => card.id),
-          };
-
-          let player2: PlayerBackend = {
-            address: player_2.address,
-            hand: (player_2.hand || [])
-              .filter((card: Card) => card.id !== undefined)
-              .map((card: Card) => card.id),
-            deck: (player_2.deck || [])
-              .filter((card: Card) => card.id !== undefined)
-              .map((card: Card) => card.id),
-          };
-          await draw(
-            wallet,
-            router.query.game_id as string,
-            is_player_1,
-            player1,
-            player2
-          );
-        }
-        if (player_1 && player_1.hand && player_1.hand.length > MAX_HAND_SIZE) {
-          setIsWaitingForDiscard(true);
-        }
-        if (!isWaitingForDiscard) {
-          setIsWaitingForPlay(true);
-        }
-        if (!isWaitingForPlay) {
-          setIsWaitingForAttack(true);
-        }
-        if (!isWaitingForAttack) {
-          setisAttacking(false);
-        }
-      } else {
-        setIsDisabled(true);
-        if (!isAttacking) {
-          await update_board_state();
-          setIs_player_1_turn(false);
-        }
-      }
-    }
-    // player 2's turn
-    else {
-      if (!is_player_1) {
-        setIsDisabled(false);
-        if (player_1 && player_2) {
-          let player1: PlayerBackend = {
-            address: player_1.address,
-            hand: player_1.hand?.map((card: Card) => card.id) || [],
-            deck: player_1.deck?.map((card: Card) => card.id) || [],
-          };
-          let player2: PlayerBackend = {
-            address: player_2.address,
-            hand: player_2.hand?.map((card: Card) => card.id) || [],
-            deck: player_2.deck?.map((card: Card) => card.id) || [],
-          };
-          await draw(
-            wallet,
-            router.query.game_id as string,
-            is_player_1,
-            player1,
-            player2
-          );
-        }
-        if (player_2 && player_2.hand && player_2.hand.length > MAX_HAND_SIZE) {
-          setIsWaitingForDiscard(true);
-        }
-        if (!isWaitingForDiscard) {
-          setIsWaitingForPlay(true);
-        }
-        if (!isWaitingForPlay) {
-          setIsWaitingForAttack(true);
-        }
-        if (!isWaitingForAttack) {
-          setisAttacking(false);
-        }
-      } else {
-        setIsDisabled(true);
-        if (!isAttacking) {
-          await update_board_state();
-          setIs_player_1_turn(true);
-        }
-      }
-    }
-  }
-
   useEffect(() => {
+    let updating = true;
     update_board_state();
     turn_logic();
-  }, []);
+    return () => {
+      updating = false;
+    };
+
+    // first render, it will be player 1 turn
+    async function update_board_state() {
+      console.log("Updating board state...");
+      if (!updating) return;
+      try {
+        // get fields from backend
+        const response = await fetch("http://localhost:5002/api/get", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const players = await response.json();
+        console.log("players from server: ", players);
+        let p1_addr = players.player_1.address;
+        let p2_addr = players.player_2.address;
+
+        setIs_player_1(p1_addr === wallet?.address);
+        // get rest of fields from contract
+
+        // console.log("player_1 turn: " + is_player_1_turn);
+        console.log("player1? : " + is_player_1);
+        console.log(p1_addr);
+        console.log(wallet?.address);
+
+        // 1. fetch game struct
+        let objects;
+        let game_objects;
+        let game;
+        if (is_player_1_turn) {
+          // get game struct from player 1
+          objects = await provider?.getOwnedObjects({
+            owner: p1_addr !== undefined ? p1_addr : "",
+            options: {
+              showType: true,
+              showContent: true,
+            },
+          });
+        } else {
+          // get game struct from player 2
+          objects = await provider?.getOwnedObjects({
+            owner: p2_addr !== undefined ? p2_addr : "",
+            options: {
+              showType: true,
+              showContent: true,
+            },
+          });
+        }
+
+        game_objects = objects?.data?.filter(
+          (object) => object.data?.type === `${MODULE_ADDRESS}::card_game::Game`
+        );
+        game = game_objects?.find(
+          (object) => object.data?.objectId === (router.query.game_id as string)
+        );
+
+        let p1_contract;
+        let p2_contract;
+        if (game) {
+          if (
+            game.data?.content &&
+            "fields" in game.data?.content &&
+            game.data?.content?.fields
+          ) {
+            p1_contract = game.data.content.fields.player_1.fields;
+            // console.log(JSON.stringify(p1_contract, null, 2));
+            p2_contract = game.data.content.fields.player_2.fields;
+          }
+        }
+
+        // convert id to Card type
+        // make sure we dont already have the card
+        players.player_1.hand.forEach(async (id: string) => {
+          if (id) {
+            let card: any = (
+              await provider?.getObject({
+                id: id,
+                options: { showContent: true },
+              })
+            )?.data?.content;
+            if (!player_1?.hand?.find((card: Card) => card.id === id)) {
+              player_1?.hand?.push({
+                id: card.fields.id.id,
+                name: card.fields.name,
+                description: card.fields.description,
+                attack: card.fields.type.fields.attack,
+                defense: card.fields.type.fields.defense,
+                image_url: card.fields.image_url,
+              });
+            }
+          }
+        });
+
+        players.player_2.hand.forEach(async (id: string) => {
+          if (id) {
+            let card: any = (
+              await provider?.getObject({
+                id: id,
+                options: { showContent: true },
+              })
+            )?.data?.content;
+            if (!player_2?.hand?.find((card: Card) => card.id === id)) {
+              player_2?.hand?.push({
+                id: card.fields.id.id,
+                name: card.fields.name,
+                description: card.fields.description,
+                attack: card.fields.type.fields.attack,
+                defense: card.fields.type.fields.defense,
+                image_url: card.fields.image_url,
+              });
+            }
+          }
+        });
+
+        // fill in struct fields for each player
+        if (p1_contract && p2_contract) {
+          let player1: any = {
+            address: p1_addr,
+            board: p1_contract?.board || [],
+            deck_commitment: p1_contract?.deck_commitment || "",
+            deck_size: p1_contract?.deck_size,
+            graveyard: p1_contract?.graveyard || [],
+            hand_commitment: p1_contract?.hand_commitment,
+            hand_size: p1_contract.hand_size,
+            id: p1_contract.id.id,
+            life: p1_contract.life,
+            deck: (player_1?.deck || []).filter(
+              (card: Card) => card?.id !== undefined
+            ),
+            hand: (player_1?.hand || []).filter(
+              (card: Card) => card?.id !== undefined
+            ),
+          };
+          let player2: PlayerObject = {
+            address: p2_addr,
+            board: p2_contract?.board || [],
+            deck_commitment: p2_contract.deck_commitment,
+            deck_size: p2_contract.deck_size,
+            graveyard: p2_contract?.graveyard || [],
+            hand_commitment: p2_contract.hand_commitment,
+            hand_size: p2_contract.hand_size,
+            id: p2_contract.id.id,
+            life: p2_contract.life,
+            deck: (player_2?.deck || []).filter(
+              (card: Card) => card?.id !== undefined
+            ),
+            hand: (player_2?.hand || []).filter(
+              (card: Card) => card?.id !== undefined
+            ),
+          };
+
+          setPlayer_1(player1);
+          setPlayer_2(player2);
+          // console.log("p1 " + JSON.stringify(player1, null, 2));
+          // console.log("p2 " + JSON.stringify(player2, null, 2));
+
+          router.push(router.asPath);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    async function turn_logic() {
+      try {
+        setisAttacking(true);
+        if (is_player_1_turn) {
+          if (is_player_1) {
+            setIsDisabled(false);
+            if (player_1 && player_2) {
+              let player1: PlayerBackend = {
+                address: player_1.address,
+                hand: (player_1.hand || [])
+                  .filter((card: Card) => card.id !== undefined)
+                  .map((card: Card) => card.id),
+                deck: (player_1.deck || [])
+                  .filter((card: Card) => card.id !== undefined)
+                  .map((card: Card) => card.id),
+              };
+
+              let player2: PlayerBackend = {
+                address: player_2.address,
+                hand: (player_2.hand || [])
+                  .filter((card: Card) => card.id !== undefined)
+                  .map((card: Card) => card.id),
+                deck: (player_2.deck || [])
+                  .filter((card: Card) => card.id !== undefined)
+                  .map((card: Card) => card.id),
+              };
+              await draw(
+                wallet,
+                router.query.game_id as string,
+                is_player_1,
+                player1,
+                player2
+              );
+            }
+            if (
+              player_1 &&
+              player_1.hand &&
+              player_1.hand.length > MAX_HAND_SIZE
+            ) {
+              setIsWaitingForDiscard(true);
+            }
+            if (!isWaitingForDiscard) {
+              setIsWaitingForPlay(true);
+            }
+            if (!isWaitingForPlay) {
+              setIsWaitingForAttack(true);
+            }
+            if (!isWaitingForAttack) {
+              setisAttacking(false);
+            }
+          } else {
+            setIsDisabled(true);
+            if (!isAttacking) {
+              setIs_player_1_turn(false);
+            }
+          }
+        }
+        // player 2's turn
+        else {
+          if (!is_player_1) {
+            setIsDisabled(false);
+            if (player_1 && player_2) {
+              let player1: PlayerBackend = {
+                address: player_1.address,
+                hand: player_1.hand?.map((card: Card) => card.id) || [],
+                deck: player_1.deck?.map((card: Card) => card.id) || [],
+              };
+              let player2: PlayerBackend = {
+                address: player_2.address,
+                hand: player_2.hand?.map((card: Card) => card.id) || [],
+                deck: player_2.deck?.map((card: Card) => card.id) || [],
+              };
+              await draw(
+                wallet,
+                router.query.game_id as string,
+                is_player_1,
+                player1,
+                player2
+              );
+            }
+            if (
+              player_2 &&
+              player_2.hand &&
+              player_2.hand.length > MAX_HAND_SIZE
+            ) {
+              setIsWaitingForDiscard(true);
+            }
+            if (!isWaitingForDiscard) {
+              setIsWaitingForPlay(true);
+            }
+            if (!isWaitingForPlay) {
+              setIsWaitingForAttack(true);
+            }
+            if (!isWaitingForAttack) {
+              setisAttacking(false);
+            }
+          } else {
+            setIsDisabled(true);
+            if (!isAttacking) {
+              setIs_player_1_turn(true);
+            }
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }, [
+    isWaitingForAttack,
+    isWaitingForDiscard,
+    isWaitingForPlay,
+    is_player_1_turn,
+  ]);
 
   return (
     <>
@@ -548,6 +571,10 @@ export default function GamePage() {
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
+                      wallet={wallet}
+                      router={router}
+                      selected_cards_to_attack={selected_cards_to_attack}
+                      selected_cards_to_defend={selected_cards_to_defend}
                     />
                   </div>
                   <div className="flex justify-center ">
@@ -738,6 +765,10 @@ export default function GamePage() {
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
+                      wallet={wallet}
+                      router={router}
+                      selected_cards_to_attack={selected_cards_to_attack}
+                      selected_cards_to_defend={selected_cards_to_defend}
                     />
                   </div>
                   <div className="flex justify-center ">

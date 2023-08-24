@@ -5,7 +5,7 @@ compiled_package_info:
     card_game: "0000000000000000000000000000000000000000000000000000000000000000"
     std: "0000000000000000000000000000000000000000000000000000000000000001"
     sui: "0000000000000000000000000000000000000000000000000000000000000002"
-  source_digest: 73F6E3B3AAF45D76C911076016A599A8F8724344FA90B34706384A0EF1C79B1E
+  source_digest: 68A750595F86EFD699FD2B960AAB99A1D30077374C418311B91B5B6CE42A5917
   build_flags:
     dev_mode: false
     test_mode: false
@@ -19,6 +19,7 @@ compiled_package_info:
     skip_fetch_latest_git_deps: false
     default_flavor: sui
     default_edition: ~
+    deps_as_root: false
 dependencies:
   - MoveStdlib
   - Sui

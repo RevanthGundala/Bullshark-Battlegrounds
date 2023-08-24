@@ -21,7 +21,7 @@ cargo:rerun-if-env-changed=HOST_CFLAGS
 HOST_CFLAGS = None
 cargo:rerun-if-env-changed=CFLAGS
 CFLAGS = None
-running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/src/hide.o" "-c" "src/hide.c"
+running: "cc" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-gdwarf-2" "-fno-omit-frame-pointer" "-arch" "arm64" "-Wall" "-Wextra" "-o" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/src/hide.o" "-c" "src/hide.c"
 exit status: 0
 cargo:rerun-if-env-changed=AR_aarch64-apple-darwin
 AR_aarch64-apple-darwin = None
@@ -39,9 +39,9 @@ cargo:rerun-if-env-changed=HOST_ARFLAGS
 HOST_ARFLAGS = None
 cargo:rerun-if-env-changed=ARFLAGS
 ARFLAGS = None
-running: ZERO_AR_DATE="1" "ar" "cq" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/libclear_on_drop.a" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/src/hide.o"
+running: ZERO_AR_DATE="1" "ar" "cq" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/libclear_on_drop.a" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/src/hide.o"
 exit status: 0
-running: "ar" "s" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/libclear_on_drop.a"
+running: "ar" "s" "/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/clear_on_drop-aef84c0856a0a3df/out/libclear_on_drop.a"
 exit status: 0
 cargo:rustc-link-lib=static=clear_on_drop
-cargo:rustc-link-search=native=/Users/revanthgundala/projects/sui_test/sui_hacker_house/backend/target/debug/build/clear_on_drop-aef84c0856a0a3df/out
+cargo:rustc-link-search=native=/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/build/clear_on_drop-aef84c0856a0a3df/out

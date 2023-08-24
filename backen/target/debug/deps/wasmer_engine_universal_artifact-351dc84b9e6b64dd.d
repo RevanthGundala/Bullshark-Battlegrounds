@@ -1,0 +1,11 @@
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/wasmer_engine_universal_artifact-351dc84b9e6b64dd.rmeta: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/artifact.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/engine.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/serialize.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/trampoline.rs
+
+/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/wasmer_engine_universal_artifact-351dc84b9e6b64dd.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/lib.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/artifact.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/engine.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/serialize.rs /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/trampoline.rs
+
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/lib.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/artifact.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/engine.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/serialize.rs:
+/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmer-engine-universal-artifact-2.3.0/src/trampoline.rs:
+
+# env-dep:CARGO_PKG_VERSION=2.3.0

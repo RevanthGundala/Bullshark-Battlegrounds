@@ -130,10 +130,6 @@ export const draw = async (
 ) => {
   if (!wallet) return;
   try {
-    let output: string = "";
-    let alpha_string: string = "";
-    let public_key: string = "";
-    let proof: string = "";
     let vk: string = "";
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";
@@ -144,7 +140,7 @@ export const draw = async (
     let deck;
     let hand;
 
-    // todo: fix if statement
+    // todo: fix if statement -> use dRand
     if (is_player_1) {
       index = Math.floor(Math.random() * player_1.deck.length);
     } else {
@@ -157,10 +153,6 @@ export const draw = async (
       target: `${MODULE_ADDRESS}::card_game::draw`,
       arguments: [
         transactionBlock.object(game_id),
-        transactionBlock.pure(output, "vector<u8>"),
-        transactionBlock.pure(alpha_string, "vector<u8>"),
-        transactionBlock.pure(public_key, "vector<u8>"),
-        transactionBlock.pure(proof, "vector<u8>"),
         transactionBlock.pure(vk, "vector<u8>"),
         transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
         transactionBlock.pure(proof_points_bytes, "vector<u8>"),
