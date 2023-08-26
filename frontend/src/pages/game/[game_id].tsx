@@ -143,6 +143,8 @@ export default function GamePage() {
         }
       }
     });
+    const deck_set = new Set(deck);
+    player.deck = player.deck?.filter((card) => deck_set.has(card.id)) || [];
     return player.deck;
   }
 
@@ -175,6 +177,10 @@ export default function GamePage() {
         }
       }
     });
+
+    // delete card id's from hand that are not in the hand array
+    const hand_set = new Set(hand);
+    player.hand = player.hand?.filter((card) => hand_set.has(card.id)) || [];
     return player.hand;
   }
 
@@ -185,9 +191,10 @@ export default function GamePage() {
 
       if (isWaitingForDiscard) {
         console.log("Discarding...");
-        await discard_card(card, player1, player2);
+        await discard_card(card, is_player_1 ? player1 : player2);
       } else if (isWaitingForPlay) {
-        await play_card(card, player1, player2);
+        console.log("Playing...");
+        await play_card(card, is_player_1 ? player1 : player2);
       } else if (isWaitingForAttack) {
         // if card belongs to player 1 -> attacking
         if (
@@ -202,40 +209,43 @@ export default function GamePage() {
     }
   }
 
-  async function discard_card(
-    card: Card,
-    player1: PlayerBackend,
-    player2: PlayerBackend
-  ) {
+  async function draw_card(player: PlayerBackend) {
+    let discard = await draw(
+      wallet,
+      router.query.game_id as string,
+      is_player_1,
+      player
+    );
+    if (discard) {
+      setIsWaitingForDiscard(true);
+    }
+  }
+
+  async function discard_card(card: Card, player: PlayerBackend) {
     await discard(
       wallet,
       router.query.game_id as string,
       card.id || "1",
       is_player_1,
-      player1,
-      player2
+      player
     );
-
     setIsWaitingForDiscard(false);
     setIsWaitingForPlay(true);
   }
 
-  async function play_card(
-    card: Card,
-    player1: PlayerBackend,
-    player2: PlayerBackend
-  ) {
+  async function play_card(card: Card, player: PlayerBackend) {
     await play(
       wallet,
       router.query.game_id as string,
       card.id || "1",
       is_player_1,
-      player1,
-      player2
+      player
     );
 
     setIsWaitingForPlay(false);
     setIsWaitingForAttack(true);
+    // console.log("Play_card: isWaitingForPlay = " + isWaitingForPlay);
+    // console.log("Play_card: isWaitingForAttack = " + isWaitingForAttack);
   }
 
   useEffect(() => {
@@ -259,14 +269,14 @@ export default function GamePage() {
           },
         });
         const players = await response.json();
-        console.log("players from server: ", players);
+        // console.log("players from server: ", players);
         let p1_addr = players.player_1.address;
         let p2_addr = players.player_2.address;
 
         setIs_player_1(p1_addr === wallet?.address);
         // get rest of fields from contract
 
-        console.log("player_1 turn: " + is_player_1_turn);
+        // console.log("player_1 turn: " + is_player_1_turn);
         //console.log("player1? : " + is_player_1);
 
         // 1. fetch game struct
@@ -388,6 +398,15 @@ export default function GamePage() {
           // console.log("p1 " + JSON.stringify(player1, null, 2));
           // console.log("p2 " + JSON.stringify(player2, null, 2));
           router.push(router.asPath);
+          console.log("Finished updating board state...");
+          // console.log(
+          //   "player 1 board: ",
+          //   JSON.stringify(player_1?.board, null, 2)
+          // );
+          console.log("After Update: isWaitingForPlay = " + isWaitingForPlay);
+          console.log(
+            "After Update: isWaitingForAttack = " + isWaitingForAttack
+          );
         }
       } catch (err) {
         console.log(err);
@@ -398,45 +417,31 @@ export default function GamePage() {
       try {
         if (is_player_1_turn) {
           if (is_player_1) {
-            if (player_1 && player_2) {
+            if (player_1) {
               let player1 = get_player_backend(player_1);
-              let player2 = get_player_backend(player_2);
               if (
                 !isWaitingForAttack &&
                 !isWaitingForDiscard &&
                 !isWaitingForPlay
               ) {
-                await draw(
-                  wallet,
-                  router.query.game_id as string,
-                  is_player_1,
-                  player1,
-                  player2
-                );
+                await draw_card(player1);
+              }
+              // will rerender on each state transition -> need to check ifs on each cond
+              else if (!isWaitingForDiscard && !isWaitingForAttack) {
+                setIsWaitingForPlay(true);
+              } else if (
+                !isWaitingForAttack &&
+                !isWaitingForPlay &&
+                !isWaitingForDiscard
+              ) {
+                setIs_player_1_turn(false);
               }
             } else {
-              console.log("player 1 or player 2 is undefined");
-            }
-            if (player_1 && player_1.hand) {
-              if (player_1.hand.length > MAX_HAND_SIZE) {
-                setIsWaitingForDiscard(true);
-              } else {
-                // will rerender on each state transition -> need to check ifs on each cond
-                if (!isWaitingForDiscard) {
-                  setIsWaitingForPlay(true);
-                } else if (!isWaitingForDiscard && !isWaitingForPlay) {
-                  setIsWaitingForAttack(true);
-                } else if (
-                  !isWaitingForAttack &&
-                  !isWaitingForPlay &&
-                  !isWaitingForDiscard
-                ) {
-                  setIs_player_1_turn(false);
-                }
-              }
+              console.log("player 1 is undefined");
             }
           }
         }
+
         // player 2's turn
         // else {
         //   if (!is_player_1) {
@@ -655,7 +660,23 @@ export default function GamePage() {
                 ))}
               </div>
               <div className="grid row-span-2 grid-cols-8 w-full min-h-fullgap-2 p-2">
-                <div className="w-full h-full p-2  "></div>
+                <div className="w-full h-full p-2  ">
+                  {player_1 &&
+                  player_1.graveyard &&
+                  player_1.graveyard.length > 0 ? (
+                    <Image
+                      src="/images/cards/front.png"
+                      alt="card"
+                      style={{
+                        width: "100px",
+                        height: "auto",
+                        marginTop: "50px",
+                      }}
+                    />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
                 <div className="w-full h-full p-2  "></div>
                 <div className="w-full h-full p-2  "></div>
                 <div className="w-full h-full p-2 mt-20 mb-5">

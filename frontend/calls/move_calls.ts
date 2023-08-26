@@ -64,21 +64,13 @@ export const challenge_person = async (
   if (!wallet) return;
   try {
     const transactionBlock = new TransactionBlock();
-    const tx = transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::challenge_person`,
-      arguments: [transactionBlock.pure(opponent, "address")],
-    });
-    const response = await wallet.signAndExecuteTransactionBlock({
+    let args = [transactionBlock.pure(opponent, "address")];
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      chain: Chain.SUI_DEVNET,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::challenge_person`,
+      args
+    );
     console.log("Challenge Person: Success\n", response);
   } catch (error) {
     console.log(error);
@@ -91,21 +83,13 @@ export const accept_challenge = async (
   if (!wallet) return;
   try {
     const transactionBlock = new TransactionBlock();
-    const tx = transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::accept_challenge`,
-      arguments: [transactionBlock.object(challenge_id)],
-    });
-    const response = await wallet.signAndExecuteTransactionBlock({
+    let args = [transactionBlock.object(challenge_id)];
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      chain: Chain.SUI_DEVNET,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::accept_challenge`,
+      args
+    );
     console.log("Accept Challenge: Success\n", response);
     let objectId = "";
     response?.objectChanges?.forEach((change) => {
@@ -125,8 +109,7 @@ export const draw = async (
   wallet: Wallet | undefined,
   game_id: string,
   is_player_1: boolean,
-  player_1: PlayerBackend,
-  player_2: PlayerBackend
+  player: PlayerBackend
 ) => {
   if (!wallet) return;
   try {
@@ -134,76 +117,37 @@ export const draw = async (
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";
     let new_hand_commitment: string = "";
-    let transactionBlock = new TransactionBlock();
-
+    let discard = false;
     let index;
-    let deck;
-    let hand;
 
     // todo: fix if statement -> use dRand
-    if (is_player_1) {
-      index = Math.floor(Math.random() * player_1.deck.length);
-    } else {
-      index = Math.floor(Math.random() * player_2.deck.length);
-    }
-
     // todo: generate random index, put put draw logic after move call
-
-    const tx = transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::draw`,
-      arguments: [
-        transactionBlock.object(game_id),
-        transactionBlock.pure(vk, "vector<u8>"),
-        transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
-        transactionBlock.pure(proof_points_bytes, "vector<u8>"),
-        transactionBlock.pure(new_hand_commitment, "vector<u8>"),
-      ],
-    });
-    let response = await wallet.signAndExecuteTransactionBlock({
+    index = Math.floor(Math.random() * player.deck.length);
+    let transactionBlock = new TransactionBlock();
+    let args = [
+      transactionBlock.object(game_id),
+      transactionBlock.pure(vk, "vector<u8>"),
+      transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
+      transactionBlock.pure(proof_points_bytes, "vector<u8>"),
+      transactionBlock.pure(new_hand_commitment, "vector<u8>"),
+    ];
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::draw`,
+      args
+    );
     console.log("Draw Response: Success\n", response);
 
     // Perform on-chain logic then update hand + deck in server
+    player.hand?.push(player.deck?.[index]);
+    player.deck?.splice(index, 1);
 
-    if (is_player_1) {
-      player_1.hand?.push(player_1.deck?.[index]);
-      player_1.deck?.splice(index, 1);
-    } else {
-      player_2.hand?.push(player_2.deck?.[index] || "");
-      player_2.deck?.splice(index, 1);
+    if (player.hand?.length > MAX_HAND_SIZE) {
+      discard = true;
     }
-
-    let post_response = await fetch("http://localhost:5002/api/post", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        player_1: {
-          address: player_1.address,
-          hand: player_1.hand,
-          deck: player_1.deck,
-        },
-        player_2: {
-          address: player_2.address,
-          hand: player_2.hand,
-          deck: player_2.deck,
-        },
-      }),
-    });
-    if (!post_response.ok) {
-      throw new Error(post_response.status.toString());
-    }
-    const result = await post_response.text();
-    console.log(result);
+    await insert_updated_players(is_player_1, player);
+    return discard;
   } catch (error) {
     console.log(error);
   }
@@ -214,92 +158,38 @@ export const discard = async (
   game_id: string,
   id_card_to_discard: string,
   is_player_1: boolean,
-  player_1: PlayerBackend,
-  player_2: PlayerBackend
+  player: PlayerBackend
 ) => {
   try {
     let vk: string = "";
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";
     let new_hand_commitment: string = "";
-    let transactionBlock = new TransactionBlock();
 
-    let hand;
     let index;
-
-    if (is_player_1) {
-      hand = player_1.hand;
-    } else {
-      hand = player_2.hand;
-    }
-    transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::discard`,
-      arguments: [
-        transactionBlock.object(game_id),
-        transactionBlock.pure(output, "vector<u8>"),
-        transactionBlock.pure(alpha_string, "vector<u8>"),
-        transactionBlock.pure(public_key, "vector<u8>"),
-        transactionBlock.pure(proof, "vector<u8>"),
-        transactionBlock.pure(vk, "vector<u8>"),
-        transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
-        transactionBlock.pure(proof_points_bytes, "vector<u8>"),
-        transactionBlock.object(id_card_to_discard),
-        transactionBlock.pure(new_hand_commitment, "vector<u8>"),
-      ],
-    });
-    let response = await wallet?.signAndExecuteTransactionBlock({
+    let transactionBlock = new TransactionBlock();
+    let args = [
+      transactionBlock.object(game_id),
+      transactionBlock.pure(vk, "vector<u8>"),
+      transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
+      transactionBlock.pure(proof_points_bytes, "vector<u8>"),
+      transactionBlock.object(id_card_to_discard),
+      transactionBlock.pure(new_hand_commitment, "vector<u8>"),
+    ];
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::discard`,
+      args
+    );
     console.log("Discard: Success", response);
 
     // add card to graveyard
-    if (is_player_1) {
-      player_1.hand?.push(id_card_to_discard);
-      index =
-        player_1.hand?.findIndex(
-          (card: string) => card === id_card_to_discard
-        ) || 0;
-      player_1.hand?.splice(index, 1);
-    } else {
-      player_2.hand?.push(id_card_to_discard);
-      index =
-        player_2.hand?.findIndex(
-          (card: string) => card === id_card_to_discard
-        ) || 0;
-      player_2.hand?.splice(index, 1);
-    }
-
-    // update deck and hand in server
-    let post_response = await fetch("http://localhost:5002/api/post", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        player_1: {
-          address: player_1.address,
-          hand: player_1.hand,
-          deck: player_1.deck,
-        },
-        player_2: {
-          address: player_2.address,
-          hand: player_2.hand,
-          deck: player_2.deck,
-        },
-      }),
-    });
-    if (!post_response.ok) {
-      throw new Error(post_response.status.toString());
-    }
-    const result = await post_response.text();
-    console.log(result);
+    index = player.hand?.findIndex(
+      (card: string) => card === id_card_to_discard
+    );
+    player.hand?.splice(index, 1);
+    await insert_updated_players(is_player_1, player);
   } catch (error) {
     console.log(error);
   }
@@ -309,8 +199,7 @@ export const play = async (
   game_id: string,
   id_card_to_play: string,
   is_player_1: boolean,
-  player_1: PlayerBackend,
-  player_2: PlayerBackend
+  player: PlayerBackend
 ) => {
   if (!wallet) return;
   try {
@@ -320,80 +209,33 @@ export const play = async (
     let new_hand_commitment: string = "";
 
     let index;
-    let hand;
 
     // find id of card to play in localStorage
-    if (is_player_1) {
-      hand = player_1.hand;
-    } else {
-      hand = player_2.hand;
-    }
-    // generate comittment from hand
 
     let transactionBlock = new TransactionBlock();
-    let tx = transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::play`,
-      arguments: [
-        transactionBlock.object(game_id),
-        transactionBlock.pure(output, "vector<u8>"),
-        transactionBlock.pure(alpha_string, "vector<u8>"),
-        transactionBlock.pure(public_key, "vector<u8>"),
-        transactionBlock.pure(proof, "vector<u8>"),
-        transactionBlock.pure(vk, "vector<u8>"),
-        transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
-        transactionBlock.pure(proof_points_bytes, "vector<u8>"),
-        transactionBlock.object(id_card_to_play),
-        transactionBlock.pure(new_hand_commitment, "vector<u8>"),
-      ],
-    });
-    let response = await wallet?.signAndExecuteTransactionBlock({
+    let args = [
+      transactionBlock.object(game_id),
+      transactionBlock.pure(vk, "vector<u8>"),
+      transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
+      transactionBlock.pure(proof_points_bytes, "vector<u8>"),
+      transactionBlock.object(id_card_to_play),
+      transactionBlock.pure(new_hand_commitment, "vector<u8>"),
+    ];
+
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::play`,
+      args
+    );
     console.log("Play Response: Success\n", response);
     // remove card from hand
-    if (is_player_1) {
-      index =
-        player_1.hand?.findIndex((card: string) => card === id_card_to_play) ||
-        0;
-      player_1.hand?.splice(index, 1);
-    } else {
-      index =
-        player_2.hand?.findIndex((card: string) => card === id_card_to_play) ||
-        0;
-      player_2.hand?.splice(index, 1);
-    }
+    index = player.hand?.findIndex((card: string) => card === id_card_to_play);
+    player.hand?.splice(index, 1);
 
-    // update deck and hand in server
-    let post_response = await fetch("http://localhost:5002/api/post", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        player_1: {
-          address: player_1.address,
-          hand: player_1.hand,
-          deck: player_1.deck,
-        },
-        player_2: {
-          address: player_2.address,
-          hand: player_2.hand,
-          deck: player_2.deck,
-        },
-      }),
-    });
-    if (!post_response.ok) {
-      throw new Error(post_response.status.toString());
-    }
-    const result = await post_response.text();
-    console.log(result);
+    // check if its p1 or p2
+
+    await insert_updated_players(is_player_1, player);
   } catch (error) {
     console.log(error);
   }
@@ -508,6 +350,80 @@ export const surrender = async (
   } catch (error) {
     console.log(error);
   }
+};
+
+const move_call = async (
+  wallet: Wallet | undefined,
+  transactionBlock: TransactionBlock,
+  target: any,
+  args: any[]
+) => {
+  try {
+    const tx = transactionBlock.moveCall({
+      target: target,
+      arguments: [...args],
+    });
+    const response = await wallet?.signAndExecuteTransactionBlock({
+      transactionBlock,
+      options: {
+        showInput: true,
+        showEffects: true,
+        showEvents: true,
+        showBalanceChanges: true,
+        showObjectChanges: true,
+      },
+    });
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const insert_updated_players = async (
+  is_player_1: boolean,
+  player: PlayerBackend
+) => {
+  let get_response = await fetch("http://localhost:5002/api/get", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const players = await get_response.json();
+  let response_body;
+  if (is_player_1) {
+    response_body = JSON.stringify({
+      player_1: {
+        address: player.address,
+        hand: player.hand,
+        deck: player.deck,
+      },
+      player_2: players.player_2,
+    });
+  } else {
+    response_body = JSON.stringify({
+      player_1: players.player_1,
+      player_2: {
+        address: player.address,
+        hand: player.hand,
+        deck: player.deck,
+      },
+    });
+  }
+
+  let post_response = await fetch("http://localhost:5002/api/post", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: response_body,
+  });
+
+  if (!post_response.ok) {
+    throw new Error(post_response.status.toString());
+  }
+  const result = await post_response.text();
+  console.log(result);
 };
 
 // export const preapprove_draw = async (
