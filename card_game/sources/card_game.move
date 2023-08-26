@@ -15,7 +15,7 @@ module card_game::card_game {
     
     // CONSTANTS
     const STARTING_HEALTH: u64 = 100;
-    const STARTING_DECK_SIZE: u64 = 10;
+    const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
     // ERRORS
@@ -23,7 +23,7 @@ module card_game::card_game {
     const EInvalid_Proof: u64 = 1;
     const EInvalid_VRF: u64 = 2;
     const EInvalid_Hand_Size: u64 = 3;
-    const EAttackersNotSelectedCorrectly: u64 = 4;
+    const EAttackersNotSelectedCorrectly: u64 = 9;
     const EDefendersNotSelectedCorrectly: u64 = 5;
     const ETooManyDefendingCharacters: u64 = 7;
     const EInvalid_Deck_Size: u64 = 8;

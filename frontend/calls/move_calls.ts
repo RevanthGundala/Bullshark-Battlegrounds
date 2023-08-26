@@ -218,10 +218,6 @@ export const discard = async (
   player_2: PlayerBackend
 ) => {
   try {
-    let output: string = "";
-    let alpha_string: string = "";
-    let public_key: string = "";
-    let proof: string = "";
     let vk: string = "";
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";
@@ -318,10 +314,6 @@ export const play = async (
 ) => {
   if (!wallet) return;
   try {
-    let output: string = "";
-    let alpha_string: string = "";
-    let public_key: string = "";
-    let proof: string = "";
     let vk: string = "";
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";

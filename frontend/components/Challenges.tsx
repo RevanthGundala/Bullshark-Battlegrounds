@@ -181,7 +181,7 @@ export default function Challenges() {
     let games = wallet?.contents?.objects.filter(
       (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
     );
-    console.log("Games: ", JSON.stringify(games, null, 2));
+    console.log("Games from Challenges.tsx: ", JSON.stringify(games, null, 2));
     if (games !== undefined && games.length > 0) {
       console.log("Loading game...");
       return <LoadingGame game_id={games?.[0].objectId} isModalOpen={true} />;
