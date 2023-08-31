@@ -2,77 +2,43 @@ pragma circom 2.1.4;
 
 include "../node_modules/circomlib/circuits/poseidon.circom";
 
-// can be used to play or discard a card
-template Play(nHandInputs, nDeckInputs) {
-     // Private Inputs
-    signal input handSalt;
-    signal input hand_card_ids[nHandInputs];
 
-    signal input deckSalt;
-    signal input deck_card_ids[nDeckInputs];
+// The hand is a commitment: hash(...cards, salt)
+// The salt is a secret value
+// we are doing a commit-reveal scheme: 
+// reveal on play: card
+// assert that the hash of the hash(card, salt, new commitment (without the card)) == old commitment
+
+// can be used to play or discard a card
+template Play() {
+    // Private Inputs
+    signal input salt_hand;
 
     // Public Inputs
-    signal input handSaltHash;
-    signal input hand_card_id_hashes[nHandInputs];
-    signal input handCommittment;
+    signal input old_hand_commitment;
+    signal input new_hand_commitment;
+    signal input salt_hand_hash;
+    signal input card_id_to_play_hash;
+    signal input card_id_to_play;
 
-    signal input deckSaltHash;
-    signal input deck_card_id_hashes[nDeckInputs];
-    signal input deckCommittment;
 
-    signal input card_id_to_reveal;
+    // ensure that the hash we comitted to actually lines up with the card we are playing
+    // Todo: not sure if this needs to be in the circuit or frontend
+    component card_hash = Poseidon(1);
+    card_hash.inputs[0] <== card_id_to_play;
+    card_hash.out === card_id_to_play_hash;
     
-    component handHash[nHandInputs];
-    component handCommittmentHasher = Poseidon(nHandInputs);
-    component handSaltHasher = Poseidon(1);
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== salt_hand;
 
-    component deckHash[nDeckInputs];
-    component deckCommittmentHasher = Poseidon(nDeckInputs);
-    component deckSaltHasher = Poseidon(1);
+    // assert salt_hash == hash(salt)
+    salt_hand_hash === hasher.out; 
 
-    // assert that PubhandSaltHash is the hash of the handSalt
-    handSaltHasher.inputs[0] <== handSalt;
-    handSaltHasher.out === handSaltHash;
+    // assert hash(card_id_to_play, new_commitment, salt) == old_commitment
+    component hash = Poseidon(3);
+    hash.inputs[0] <== card_id_to_play;
+    hash.inputs[1] <== new_hand_commitment;
+    hash.inputs[2] <== salt_hand;
 
-    deckSaltHasher.inputs[0] <== deckSalt;
-    deckSaltHasher.out === deckSaltHash;
-
-    // assert that each pub hash id is equal to secret input id 
-    // Ensures that the cards are the same and we did not secretly swap out a card
-    for(var i = 0; i < nHandInputs; i++){
-        handHash[i] = Poseidon(1);
-        handHash[i].inputs[0] <== hand_card_ids[i];
-        handHash[i].out === hand_card_id_hashes[i];
-
-        if(i == nHandInputs - 1){
-            handCommittmentHasher.inputs[i] <== handSalt;
-        }
-        else{
-            handCommittmentHasher.inputs[i] <== hand_card_ids[i];
-        }
-    }
-
-    for(var i = 0; i < nDeckInputs; i++){
-        deckHash[i] = Poseidon(1);
-        deckHash[i].inputs[0] <== deck_card_ids[i];
-        deckHash[i].out === deck_card_id_hashes[i];
-
-        if(i == nDeckInputs - 1){
-            deckCommittmentHasher.inputs[i] <== deckSalt;
-        }
-        else{
-            deckCommittmentHasher.inputs[i] <== deck_card_ids[i];
-        }
-    }
-
-    // assert that the handCommittment and deckCommittment lines up with the hash provided
-   handCommittmentHasher.out === handCommittment;
-   deckCommittmentHasher.out === deckCommittment;
-
-   // ensures that card id that we are revealing is the same as the one we are playing
-   card_id_to_reveal === card_id_to_reveal;
+    old_hand_commitment === hash.out;
 }
-
-// number of cards in hand
-component main { public [ handSaltHash, hand_card_id_hashes, handCommittment, deckSaltHash, deck_card_id_hashes, deckCommittment, card_id_to_reveal ] } = Play(6, 12);
-

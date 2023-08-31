@@ -1,5 +1,0 @@
-/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/tower_service-d56c981a2010f8df.rmeta: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tower-service-0.3.2/src/lib.rs
-
-/Users/revanthgundala/projects/sui_test/sui_hacker_house/zk_tcg_sui/backen/target/debug/deps/tower_service-d56c981a2010f8df.d: /Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tower-service-0.3.2/src/lib.rs
-
-/Users/revanthgundala/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tower-service-0.3.2/src/lib.rs:

@@ -18,16 +18,17 @@ interface StateProps {
   isWaitingForPlay: boolean;
   wallet: Wallet | undefined;
   router: NextRouter;
-  selected_cards_to_attack: Card[] | null;
-  selected_cards_to_defend: Card[] | null;
+  selected_cards_to_attack: number[] | null;
+  selected_cards_to_defend: number[] | null;
 }
 
 async function attack_opponent(
   wallet: Wallet | undefined,
   router: NextRouter,
-  selected_cards_to_attack: Card[] | null,
-  selected_cards_to_defend: Card[] | null
+  selected_cards_to_attack: number[] | null,
+  selected_cards_to_defend: number[] | null
 ) {
+  console.log("State.tsx: attacking_cards: ", selected_cards_to_attack?.length);
   let directPlayerAttacks = 0;
   if (selected_cards_to_attack && selected_cards_to_defend) {
     directPlayerAttacks =
@@ -35,8 +36,8 @@ async function attack_opponent(
     let game_over = await attack(
       wallet,
       router.query.game_id as string,
-      selected_cards_to_attack.map((character: Card) => character.id), // attacking character ids
-      selected_cards_to_defend.map((character: Card) => character.id),
+      selected_cards_to_attack, // attacking character indices
+      selected_cards_to_defend,
       directPlayerAttacks
     );
     if (game_over) {
@@ -68,6 +69,7 @@ const State: React.FC<StateProps> = ({
               {isWaitingForAttack ? (
                 <Button
                   onClick={async () => {
+                    console.log("Attacking");
                     await attack_opponent(
                       wallet,
                       router,

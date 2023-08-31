@@ -117,6 +117,7 @@ export const draw = async (
     let public_inputs_bytes: string = "";
     let proof_points_bytes: string = "";
     let new_hand_commitment: string = "";
+    let new_deck_commitment: string = "";
     let discard = false;
     let index;
 
@@ -130,6 +131,7 @@ export const draw = async (
       transactionBlock.pure(public_inputs_bytes, "vector<u8>"),
       transactionBlock.pure(proof_points_bytes, "vector<u8>"),
       transactionBlock.pure(new_hand_commitment, "vector<u8>"),
+      transactionBlock.pure(new_deck_commitment, "vector<u8>"),
     ];
     let response = await move_call(
       wallet,
@@ -244,44 +246,40 @@ export const play = async (
 export const attack = async (
   wallet: Wallet | undefined,
   game_id: string,
-  attacking_characters: string[], // card id
-  defending_characters: string[],
+  attacking_characters: number[], // card index
+  defending_characters: number[],
   direct_player_attacks: number
 ) => {
   if (!wallet) return;
   try {
     let transactionBlock = new TransactionBlock();
-    let tx = transactionBlock.moveCall({
-      target: `${MODULE_ADDRESS}::card_game::attack`,
-      arguments: [
-        transactionBlock.object(game_id),
-        transactionBlock.makeMoveVec({
-          objects: attacking_characters.map((character: string) =>
-            transactionBlock.object(character)
-          ),
-        }),
-        transactionBlock.makeMoveVec({
-          objects: defending_characters.map((character: string) =>
-            transactionBlock.object(character)
-          ),
-        }),
-        transactionBlock.pure(direct_player_attacks),
-      ],
-    });
-    let response = await wallet?.signAndExecuteTransactionBlock({
+    console.log("attacking characters in move call ; ", attacking_characters);
+    let args = [
+      transactionBlock.object(game_id),
+      transactionBlock.makeMoveVec({
+        objects:
+          attacking_characters.map((index: number) =>
+            transactionBlock.pure(index)
+          ) || [],
+      }),
+      transactionBlock.makeMoveVec({
+        objects:
+          defending_characters.map((index: number) =>
+            transactionBlock.pure(index)
+          ) || [],
+      }),
+      transactionBlock.pure(direct_player_attacks),
+    ];
+    let response = await move_call(
+      wallet,
       transactionBlock,
-      options: {
-        showInput: true,
-        showEffects: true,
-        showEvents: true,
-        showBalanceChanges: true,
-        showObjectChanges: true,
-      },
-    });
+      `${MODULE_ADDRESS}::card_game::attack`,
+      args
+    );
     console.log("Attack Response: Success\n", response);
 
     let game_over = false;
-    await listen_for_events();
+    // await listen_for_events();
     /*
       if(event.winner == wallet.address){
         game_over = true;
@@ -448,22 +446,4 @@ const insert_updated_players = async (
 //     preapproval = false;
 //   }
 //   return preapproval;
-// };
-
-// export const generate_draw_proof_with_rust = async () => {
-//   try {
-//     let draw_proof: Proof = await generate_draw_proof();
-//     return draw_proof;
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
-
-// export const generate_discard_proof_with_rust = async () => {
-//   try {
-//     let discard_proof: Proof = await generate_discard_proof();
-//     return discard_proof;
-//   } catch (error) {
-//     console.log(error);
-//   }
 // };

@@ -132,7 +132,6 @@ export default function Challenges() {
         }
         player_2.deck.splice(index, 1);
       }
-      console.log("after whiles");
       // get card objects from ids
       player_1.deck.map(async (id: string) => {
         (await provider?.getObject({ id: id, options: { showContent: true } }))
@@ -181,7 +180,6 @@ export default function Challenges() {
     let games = wallet?.contents?.objects.filter(
       (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
     );
-    console.log("Games from Challenges.tsx: ", JSON.stringify(games, null, 2));
     if (games !== undefined && games.length > 0) {
       console.log("Loading game...");
       return <LoadingGame game_id={games?.[0].objectId} isModalOpen={true} />;

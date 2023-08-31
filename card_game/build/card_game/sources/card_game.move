@@ -32,6 +32,7 @@ module card_game::card_game {
         id: UID,
         player_1: Player,
         player_2: Player
+        //game_status: GameStatus, todo!
     }
 
     struct Player has key, store{
@@ -45,6 +46,23 @@ module card_game::card_game {
         board: vector<Card>,
         life: u64,
     }
+
+    /*  
+
+    Person gets an nft card, 
+    when game starts, their deck is composed of private nfts
+
+    // only the owner of the private card can see the contents
+    struct PrivateCard has key, store{ 
+        id: UID,
+        name: vector<u8>,
+        description: vector<u8>,
+        type: vector<u8>,
+        image_url: vector<u8>,
+    }
+    */
+
+    
 
     struct Card has key, store{
         id: UID,
@@ -168,6 +186,7 @@ module card_game::card_game {
         public_inputs_bytes: vector<u8>, 
         proof_points_bytes: vector<u8>,
         new_hand_commitment: vector<u8>,
+        new_deck_commitment: vector<u8>,
         ctx: &mut TxContext) {
         let (attacking_player, defending_player) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
@@ -176,6 +195,7 @@ module card_game::card_game {
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EInvalid_Proof);
 
         // Place card in hand
+        attacking_player.deck_commitment = new_deck_commitment;
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size + 1;
         attacking_player.deck_size = attacking_player.deck_size - 1;
@@ -219,17 +239,18 @@ module card_game::card_game {
     //  that are going directly to the player
     public fun attack(
         game: Game, 
-    attacking_characters: vector<Card>, 
-    defending_characters: vector<Card>, 
+    attacking_characters: vector<u64>, 
+    defending_characters: vector<u64>, 
     direct_player_attacks: u64, 
     ctx: &mut TxContext){
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
-        let attacking_size = vector::length<Card>(&attacking_characters);
-        let defending_size = vector::length<Card>(&defending_characters);
+        let attacking_size = vector::length<u64>(&attacking_characters);
+        let defending_size = vector::length<u64>(&defending_characters);
 
         let attacking_board_size = vector::length<Card>(&attacking_player.board);
         let defending_board_size = vector::length<Card>(&defending_player.board);
+
        
         assert!(attacking_size <= attacking_board_size, EAttackersNotSelectedCorrectly);
         // I.e. user can't select 2 characters and attack 3 objects
@@ -242,11 +263,13 @@ module card_game::card_game {
         let i = 0;
         while(i < attacking_size){
             // get attacking character
-            let attacking_character = vector::borrow_mut<Card>(&mut attacking_characters, i);
+            let attacking_character_index = *(vector::borrow<u64>(&attacking_characters, i));
+            let attacking_character = vector::borrow_mut<Card>(&mut attacking_player.board, attacking_character_index);
             // attack the actual characters
             if(i < defending_size) {
                 // get the defending character
-                let defending_character = vector::borrow_mut<Card>(&mut defending_characters, i);
+                let defending_player_index = *(vector::borrow<u64>(&defending_characters, i));
+                let defending_character = vector::borrow_mut<Card>(&mut defending_player.board, defending_player_index);
 
                 // Compute the attack results (Sui doesn't support negative numbers)
                 if(attacking_character.type.attack < defending_character.type.defense) {
@@ -257,13 +280,23 @@ module card_game::card_game {
                 }
                 // remove characters from board
                 else{
+                    let remove_defending_character = false;
+                    let remove_attacking_character = false;
                     if(attacking_character.type.attack >= defending_character.type.defense){
-                        vector::push_back<Card>(&mut defending_player.graveyard, 
-                        vector::remove<Card>(&mut defending_player.board, i));
+                        remove_defending_character = true;
                     };
                     if(attacking_character.type.defense <= defending_character.type.attack){
+                        remove_attacking_character = true;
+                    };
+
+                    if(remove_defending_character) {
+                         vector::push_back<Card>(&mut defending_player.graveyard, 
+                        vector::remove<Card>(&mut defending_player.board, defending_player_index));
+                    };
+
+                    if(remove_attacking_character) {
                         vector::push_back<Card>(&mut attacking_player.graveyard, 
-                        vector::remove<Card>(&mut attacking_player.board, i));
+                        vector::remove<Card>(&mut attacking_player.board, attacking_character_index));
                     };
                 };
             }   
@@ -280,42 +313,6 @@ module card_game::card_game {
         };
 
         // clear out arrays and drop objects
-        let _ = defending_player.addr;
-        let _ = attacking_player.addr;
-        let i = 0;
-            while(i < attacking_size){
-                let card = vector::pop_back<Card>(&mut attacking_characters);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                    type: Character{
-                        attack: _,
-                        defense: _,
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty(attacking_characters);
-            i = 0;
-            while(i < defending_size){
-                let card = vector::pop_back<Card>(&mut defending_characters);
-                let Card{
-                    id: card_id,
-                    name: _,
-                    description: _,
-                    type: Character{
-                        attack: _,
-                        defense: _,
-                    },
-                    image_url: _,
-                } = card;
-                object::delete(card_id);
-                i = i + 1;
-            };
-            vector::destroy_empty(defending_characters);
         if(game_over){
             end_game(game, tx_context::sender(ctx));
         }
