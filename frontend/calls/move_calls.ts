@@ -256,18 +256,8 @@ export const attack = async (
     console.log("attacking characters in move call ; ", attacking_characters);
     let args = [
       transactionBlock.object(game_id),
-      transactionBlock.makeMoveVec({
-        objects:
-          attacking_characters.map((index: number) =>
-            transactionBlock.pure(index)
-          ) || [],
-      }),
-      transactionBlock.makeMoveVec({
-        objects:
-          defending_characters.map((index: number) =>
-            transactionBlock.pure(index)
-          ) || [],
-      }),
+      transactionBlock.pure(attacking_characters),
+      transactionBlock.pure(defending_characters),
       transactionBlock.pure(direct_player_attacks),
     ];
     let response = await move_call(

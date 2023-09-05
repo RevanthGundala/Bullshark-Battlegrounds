@@ -86,6 +86,10 @@ export default function GamePage() {
     id: string;
   }
 
+  function toggle_isWaitingForAttack() {
+    setIsWaitingForAttack(!isWaitingForAttack);
+  }
+
   function new_player_object(
     address: string,
     board: Card[] | undefined,
@@ -271,26 +275,19 @@ export default function GamePage() {
 
   function get_game_object(): any {
     let curr_game, game_objects;
-    if (is_player_1_turn && is_player_1) {
-      // game object lives here
-      game_objects = wallet?.contents?.objects.filter(
-        (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
-      );
-      curr_game = game_objects?.find(
-        (object) => object.objectId === (router.query.game_id as string)
-      );
-    } else if (!is_player_1_turn && !is_player_1) {
-      game_objects = wallet?.contents?.objects.filter(
-        (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
-      );
-      curr_game = game_objects?.find(
-        (object) => object.objectId === (router.query.game_id as string)
-      );
-    }
+    // game object lives here
+    game_objects = wallet?.contents?.objects.filter(
+      (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
+    );
+    curr_game = game_objects
+      ? game_objects?.find(
+          (object) => object.objectId === (router.query.game_id as string)
+        )
+      : undefined;
     return curr_game;
   }
   const game = useMemo(() => get_game_object(), [wallet?.contents?.objects]);
-  console.log("game: " + game);
+  // console.log("game: " + game);
 
   useEffect(() => {
     let updating = true;
@@ -398,7 +395,7 @@ export default function GamePage() {
 
           setPlayer_1(player1);
           setPlayer_2(player2);
-          router.push(router.asPath);
+          router.replace(router.asPath);
           console.log("Finished updating board state...");
         } else {
           console.log("p1_contract or p2_contract is undefined");
@@ -410,6 +407,10 @@ export default function GamePage() {
 
     async function turn_logic() {
       try {
+        if (!updating) {
+          console.log("Not updating turn logic");
+          return;
+        }
         if (is_player_1_turn) {
           if (is_player_1) {
             if (player_1) {
@@ -435,41 +436,40 @@ export default function GamePage() {
             } else {
               console.log("player 1 is undefined");
             }
+          } else {
+            console.log("You are player2");
           }
         }
-
         // player 2's turn
-        // else {
-        //   if (!is_player_1) {
-        //     if (player_1 && player_2) {
-        //       let player1 = get_player_backend(player_1);
-        //       let player2 = get_player_backend(player_2);
-        //       await draw(
-        //         wallet,
-        //         router.query.game_id as string,
-        //         is_player_1,
-        //         player1,
-        //         player2
-        //       );
-        //     }
-        //     if (
-        //       player_2 &&
-        //       player_2.hand &&
-        //       player_2.hand.length > MAX_HAND_SIZE
-        //     ) {
-        //       setIsWaitingForDiscard(true);
-        //     }
-        //     if (!isWaitingForDiscard) {
-        //       setIsWaitingForPlay(true);
-        //     }
-        //     if (!isWaitingForPlay) {
-        //       setIsWaitingForAttack(true);
-        //     }
-        //     if (!isWaitingForAttack) {
-        //       setIs_player_1_turn(true);
-        //     }
-        //   }
-        // }
+        else {
+          if (!is_player_1) {
+            if (player_2) {
+              let player2 = get_player_backend(player_2);
+              console.log("Turn logic begins");
+              if (
+                !isWaitingForAttack &&
+                !isWaitingForDiscard &&
+                !isWaitingForPlay
+              ) {
+                await draw_card(player2);
+              }
+              // will rerender on each state transition -> need to check ifs on each cond
+              else if (!isWaitingForDiscard && !isWaitingForAttack) {
+                setIsWaitingForPlay(true);
+              } else if (
+                !isWaitingForAttack &&
+                !isWaitingForPlay &&
+                !isWaitingForDiscard
+              ) {
+                setIs_player_1_turn(true);
+              }
+            } else {
+              console.log("player 2 is undefined");
+            }
+          } else {
+            console.log("You are player1");
+          }
+        }
       } catch (error) {
         console.log(error);
       }
@@ -545,7 +545,7 @@ export default function GamePage() {
                         label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
                       >
                         <Button
-                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
                             border: isWaitingForAttack
@@ -577,6 +577,7 @@ export default function GamePage() {
                     <State
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
+                      toggle_isWaitingForAttack={toggle_isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
                       wallet={wallet}
                       router={router}
@@ -636,7 +637,7 @@ export default function GamePage() {
                         A:${card.attack} D:${card.defense}`}
                     >
                       <Button
-                        onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                        onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
                         className="w-full h-full p-0"
                         style={{
                           height: "80px",
@@ -650,7 +651,7 @@ export default function GamePage() {
                         <Box
                           _hover={{ backgroundColor: "#ebedf0" }} // Hover effect for the Box
                         >
-                          <Image src="/images/cards/front.png" alt="shark" />
+                          <Image src="/images/cards/back.jpeg" alt="shark" />
                         </Box>
                       </Button>
                     </Tooltip>
@@ -760,7 +761,7 @@ export default function GamePage() {
                         label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
                       >
                         <Button
-                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
                             border: isWaitingForAttack
@@ -792,6 +793,7 @@ export default function GamePage() {
                     <State
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
+                      toggle_isWaitingForAttack={toggle_isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
                       wallet={wallet}
                       router={router}
@@ -820,7 +822,7 @@ export default function GamePage() {
                         label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
                       >
                         <Button
-                          onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                          onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
                           className="w-full h-full p-0 hover:border-red-500"
                           style={{
                             border: isWaitingForAttack
@@ -845,7 +847,7 @@ export default function GamePage() {
                       label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
                     >
                       <Button
-                        onClick={() => handleCardClick(card)} // Replace with your onClick handler function
+                        onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
                         className="w-full h-full p-0 hover:border-red-500"
                         style={{
                           border: isWaitingForAttack ? "2px solid red" : "none",

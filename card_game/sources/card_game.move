@@ -76,6 +76,8 @@ module card_game::card_game {
     struct Character has store {
         attack: u64,
         defense: u64,   
+        // game_attack: u64, TODO: Add game_attack and game_defense so we players can get their card back when game ends
+        // game_defense: u64,
     }
 
     struct Challenge has key {

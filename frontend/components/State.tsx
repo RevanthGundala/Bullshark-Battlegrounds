@@ -15,6 +15,7 @@ interface Card {
 interface StateProps {
   isWaitingForDiscard: boolean;
   isWaitingForAttack: boolean;
+  toggle_isWaitingForAttack: () => void;
   isWaitingForPlay: boolean;
   wallet: Wallet | undefined;
   router: NextRouter;
@@ -50,6 +51,7 @@ async function attack_opponent(
 const State: React.FC<StateProps> = ({
   isWaitingForDiscard,
   isWaitingForAttack,
+  toggle_isWaitingForAttack,
   isWaitingForPlay,
   wallet,
   router,
@@ -69,14 +71,13 @@ const State: React.FC<StateProps> = ({
               {isWaitingForAttack ? (
                 <Button
                   onClick={async () => {
-                    console.log("Attacking");
                     await attack_opponent(
                       wallet,
                       router,
                       selected_cards_to_attack,
                       selected_cards_to_defend
                     );
-                    isWaitingForAttack = false;
+                    toggle_isWaitingForAttack();
                   }}
                 >
                   Attack
