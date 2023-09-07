@@ -266,16 +266,25 @@ export default function GamePage() {
   }
 
   function get_game_object(): any {
-    let curr_game, game_objects;
-    // game object lives here
-    game_objects = wallet?.contents?.objects.filter(
+    let game_objects = wallet?.contents?.objects.filter(
       (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
     );
-    curr_game = game_objects
+    let curr_game = game_objects
       ? game_objects?.find(
           (object) => object.objectId === (router.query.game_id as string)
         )
       : undefined;
+    if (player_1 && player_2) {
+      if (wallet?.address === player_1.address) {
+        curr_game === undefined
+          ? setIs_player_1_turn(false)
+          : setIs_player_1_turn(true);
+      } else {
+        curr_game === undefined
+          ? setIs_player_1_turn(true)
+          : setIs_player_1_turn(false);
+      }
+    }
     return curr_game;
   }
   const game = useMemo(() => get_game_object(), [wallet?.contents?.objects]);
@@ -284,7 +293,7 @@ export default function GamePage() {
   useEffect(() => {
     let updating = true;
     update_board_state();
-    // turn_logic();
+    turn_logic();
     return () => {
       updating = false;
     };
