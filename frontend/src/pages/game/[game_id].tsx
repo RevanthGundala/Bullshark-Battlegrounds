@@ -32,12 +32,13 @@ import State from "../../../components/State";
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
 
+  const [has_drawn, setHas_drawn] = useState(false);
   const [isWaitingForDiscard, setIsWaitingForDiscard] = useState(false);
   const [isWaitingForPlay, setIsWaitingForPlay] = useState(false);
   const [isWaitingForAttack, setIsWaitingForAttack] = useState(false);
 
   const [is_player_1, setIs_player_1] = useState(false);
-  const [is_player_1_turn, setIs_player_1_turn] = useState(true); // TODO: change later - should just be true on first render
+  const [is_player_1_turn, setIs_player_1_turn] = useState(true); // TODO: change later - should just be true on first render (use local storage hook)
 
   const [player_1, setPlayer_1] = useState<PlayerObject>();
   const [player_2, setPlayer_2] = useState<PlayerObject>();
@@ -275,20 +276,18 @@ export default function GamePage() {
         )
       : undefined;
     if (player_1 && player_2) {
-      if (wallet?.address === player_1.address) {
-        curr_game === undefined
-          ? setIs_player_1_turn(false)
-          : setIs_player_1_turn(true);
-      } else {
-        curr_game === undefined
-          ? setIs_player_1_turn(true)
-          : setIs_player_1_turn(false);
-      }
+      curr_game === undefined && wallet?.address === player_1.address
+        ? setIs_player_1_turn(false)
+        : setIs_player_1_turn(true);
+      curr_game === undefined && wallet?.address === player_2.address
+        ? setIs_player_1_turn(true)
+        : setIs_player_1_turn(false);
     }
     return curr_game;
   }
+
   const game = useMemo(() => get_game_object(), [wallet?.contents?.objects]);
-  console.log("game: " + game);
+  // console.log("game: " + game);
 
   useEffect(() => {
     let updating = true;
@@ -414,16 +413,19 @@ export default function GamePage() {
           console.log("Not updating turn logic");
           return;
         }
+        console.log("Turn logic started!");
         if (is_player_1_turn) {
           if (is_player_1) {
             if (player_1) {
               let player1 = get_player_backend(player_1);
               if (
+                !has_drawn &&
                 !isWaitingForAttack &&
                 !isWaitingForDiscard &&
                 !isWaitingForPlay
               ) {
                 await draw_card(player1);
+                setHas_drawn(true);
               }
               // will rerender on each state transition -> need to check ifs on each cond
               else if (!isWaitingForDiscard && !isWaitingForAttack) {
@@ -433,6 +435,7 @@ export default function GamePage() {
                 !isWaitingForPlay &&
                 !isWaitingForDiscard
               ) {
+                console.log("Setting is_player_1_turn to false");
                 setIs_player_1_turn(false);
               }
             } else {
@@ -464,6 +467,7 @@ export default function GamePage() {
                 !isWaitingForDiscard
               ) {
                 setIs_player_1_turn(true);
+                setHas_drawn(false);
               }
             } else {
               console.log("player 2 is undefined");
