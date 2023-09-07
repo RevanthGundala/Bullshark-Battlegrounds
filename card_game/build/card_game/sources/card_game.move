@@ -14,7 +14,7 @@ module card_game::card_game {
     use sui::ecvrf;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 100;
+    const STARTING_HEALTH: u64 = 20;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
@@ -76,6 +76,8 @@ module card_game::card_game {
     struct Character has store {
         attack: u64,
         defense: u64,   
+        // game_attack: u64, TODO: Add game_attack and game_defense so we players can get their card back when game ends
+        // game_defense: u64,
     }
 
     struct Challenge has key {

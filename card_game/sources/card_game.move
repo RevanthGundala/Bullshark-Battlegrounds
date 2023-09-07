@@ -14,7 +14,7 @@ module card_game::card_game {
     use sui::ecvrf;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 100;
+    const STARTING_HEALTH: u64 = 20;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
