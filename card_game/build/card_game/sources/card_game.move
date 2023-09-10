@@ -32,7 +32,7 @@ module card_game::card_game {
         id: UID,
         player_1: Player,
         player_2: Player
-        //game_status: GameStatus, todo!
+        //game_status: GameStatus, //TODO: Add game status + state of game (drawing, discarding, etc)
     }
 
     struct Player has key, store{

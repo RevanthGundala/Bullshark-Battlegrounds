@@ -28,6 +28,7 @@ import {
   end_turn,
 } from "../../../calls/move_calls";
 import State from "../../../components/State";
+import { useLocalStorage } from "usehooks-ts";
 
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
@@ -49,6 +50,9 @@ export default function GamePage() {
   const [selected_cards_to_defend, setSelected_cards_to_defend] = useState<
     number[] | null
   >([]);
+
+  const [p1_addr, setP1_addr] = useLocalStorage("p1_addr", "");
+  const [p2_addr, setP2_addr] = useLocalStorage("p2_addr", "");
 
   const router = useRouter();
 
@@ -309,27 +313,44 @@ export default function GamePage() {
           (object) => object.objectId === (router.query.game_id as string)
         )
       : undefined;
-    if (player_1 && player_2) {
-      curr_game === undefined && wallet?.address === player_1.address
+    if (p1_addr && p2_addr) {
+      curr_game === undefined && wallet?.address === p1_addr
         ? setIs_player_1_turn(false)
         : setIs_player_1_turn(true);
-      curr_game === undefined && wallet?.address === player_2.address
+      curr_game === undefined && wallet?.address === p2_addr
         ? setIs_player_1_turn(true)
         : setIs_player_1_turn(false);
+      curr_game = curr_game === undefined ? get_game_from_url() : curr_game;
+      console.log(curr_game);
     }
     return curr_game;
   }
 
+  function get_game_from_url(): any {
+    return provider
+      ?.getObject({
+        id: router.query.game_id as string,
+        options: { showContent: true },
+      })
+      .then((game) => {
+        // console.log(game);
+        return game.data?.content;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   const game = useMemo(() => get_game_object(), [wallet?.contents?.objects]);
-  // console.log("game: " + JSON.stringify(game));
+  console.log("game: " + JSON.stringify(game));
   // console.log("isplayer1turn: " + is_player_1_turn);
 
   useEffect(() => {
     let updating = true;
     update_board_state();
-    if (player_1 && player_2) {
-      turn_logic();
-    }
+    // if (player_1 && player_2) {
+    //   turn_logic();
+    // }
     return () => {
       updating = false;
     };
@@ -341,10 +362,6 @@ export default function GamePage() {
         console.log("Not updating board state");
         return;
       }
-      if (!game) {
-        console.log("game is undefined, cant update state");
-        return;
-      }
       try {
         // get fields from backend
         const response = await fetch("http://localhost:5002/api/get", {
@@ -354,11 +371,15 @@ export default function GamePage() {
           },
         });
         const players = await response.json();
-        let p1_addr = players.player_1.address;
-        let p2_addr = players.player_2.address;
-
+        // let p1_addr = players.player_1.address;
+        // let p2_addr = players.player_2.address;
+        setP1_addr(players.player_1.address);
+        setP2_addr(players.player_2.address);
         setIs_player_1(p1_addr === wallet?.address);
-
+        if (!game) {
+          console.log("game is undefined, cant update state");
+          return;
+        }
         let p1_contract = game.fields.player_1.fields;
         let p2_contract = game.fields.player_2.fields;
 
@@ -508,9 +529,6 @@ export default function GamePage() {
       }
     }
   }, [
-    isWaitingForAttack,
-    isWaitingForDiscard,
-    isWaitingForPlay,
     is_player_1_turn,
     game?.fields?.player_1?.fields,
     game?.fields?.player_2?.fields,
