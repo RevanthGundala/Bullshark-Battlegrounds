@@ -53,6 +53,9 @@ export default function GamePage() {
 
   const [p1_addr, setP1_addr] = useLocalStorage("p1_addr", "");
   const [p2_addr, setP2_addr] = useLocalStorage("p2_addr", "");
+  const [provider_addr, setProvider_addr] = useLocalStorage("provider", "");
+
+  const [game, setGame] = useState<any>();
 
   const router = useRouter();
 
@@ -304,46 +307,17 @@ export default function GamePage() {
     setIsWaitingForAttack(true);
   }
 
-  function get_game_object(): any {
-    let game_objects = wallet?.contents?.objects.filter(
-      (obj) => obj.type === `${MODULE_ADDRESS}::card_game::Game`
-    );
-    let curr_game = game_objects
-      ? game_objects?.find(
-          (object) => object.objectId === (router.query.game_id as string)
-        )
-      : undefined;
-    if (p1_addr && p2_addr) {
-      curr_game === undefined && wallet?.address === p1_addr
-        ? setIs_player_1_turn(false)
-        : setIs_player_1_turn(true);
-      curr_game === undefined && wallet?.address === p2_addr
-        ? setIs_player_1_turn(true)
-        : setIs_player_1_turn(false);
-      curr_game = curr_game === undefined ? get_game_from_url() : curr_game;
-      console.log(curr_game);
+  async function get_game_object(): Promise<any> {
+    if (!provider) {
+      console.log("provider is undefined");
+      return;
     }
-    return curr_game;
+    let res = await provider.getObject({
+      id: router.query.game_id as string,
+      options: { showContent: true },
+    });
+    return res?.data?.content;
   }
-
-  function get_game_from_url(): any {
-    return provider
-      ?.getObject({
-        id: router.query.game_id as string,
-        options: { showContent: true },
-      })
-      .then((game) => {
-        // console.log(game);
-        return game.data?.content;
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
-  const game = useMemo(() => get_game_object(), [wallet?.contents?.objects]);
-  console.log("game: " + JSON.stringify(game));
-  // console.log("isplayer1turn: " + is_player_1_turn);
 
   useEffect(() => {
     let updating = true;
@@ -357,101 +331,122 @@ export default function GamePage() {
 
     // first render, it will be player 1 turn
     async function update_board_state() {
-      console.log("Updating board state...");
       if (!updating) {
         console.log("Not updating board state");
         return;
       }
-      try {
-        // get fields from backend
-        const response = await fetch("http://localhost:5002/api/get", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        const players = await response.json();
-        // let p1_addr = players.player_1.address;
-        // let p2_addr = players.player_2.address;
-        setP1_addr(players.player_1.address);
-        setP2_addr(players.player_2.address);
-        setIs_player_1(p1_addr === wallet?.address);
-        if (!game) {
-          console.log("game is undefined, cant update state");
-          return;
-        }
-        let p1_contract = game.fields.player_1.fields;
-        let p2_contract = game.fields.player_2.fields;
+      console.log("Getting game...");
+      let game_object = await get_game_object();
+      if (game_object) {
+        JSON.stringify(game_object) !== JSON.stringify(game)
+          ? setGame(game_object)
+          : undefined;
+        console.log(JSON.stringify(game_object));
+        console.log("game: " + JSON.stringify(game));
+        console.log("Updating board state...");
+        try {
+          // get fields from backend
+          const response = await fetch("http://localhost:5002/api/get", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          const players = await response.json();
+          // let p1_addr = players.player_1.address;
+          // let p2_addr = players.player_2.address;
+          setP1_addr(players.player_1.address);
+          setP2_addr(players.player_2.address);
+          setIs_player_1(p1_addr === wallet?.address);
+          if (!game) {
+            console.log("game is undefined, cant update state");
+            return;
+          }
+          let p1_contract = game.fields.player_1.fields;
+          let p2_contract = game.fields.player_2.fields;
 
-        let currentPlayer1, currentPlayer2;
+          let currentPlayer1, currentPlayer2;
 
-        if (!player_1 || !player_2) {
-          [currentPlayer1, currentPlayer2] = new_default_players(
-            p1_addr,
-            p1_contract,
-            p2_addr,
-            p2_contract
+          if (!player_1 || !player_2) {
+            [currentPlayer1, currentPlayer2] = new_default_players(
+              p1_addr,
+              p1_contract,
+              p2_addr,
+              p2_contract
+            );
+          } else {
+            currentPlayer1 = player_1;
+            currentPlayer2 = player_2;
+          }
+
+          let p1_deck = await update_deck(
+            players.player_1.deck,
+            currentPlayer1
           );
-        } else {
-          currentPlayer1 = player_1;
-          currentPlayer2 = player_2;
+          let p1_hand = await update_hand(
+            players.player_1.hand,
+            currentPlayer1
+          );
+          let p2_deck = await update_deck(
+            players.player_2.deck,
+            currentPlayer2
+          );
+          let p2_hand = await update_hand(
+            players.player_2.hand,
+            currentPlayer2
+          );
+
+          let player1: PlayerObject = new_player_object(
+            p1_addr,
+            p1_contract?.board.map((contract_card: any) =>
+              contract_card_to_card(contract_card)
+            ),
+            p1_contract?.deck_commitment,
+            p1_contract?.deck_size,
+            p1_contract?.graveyard.map((contract_card: any) =>
+              contract_card_to_card(contract_card)
+            ),
+            p1_contract?.hand_commitment,
+            p1_contract?.hand_size,
+            p1_contract?.id?.id,
+            p1_contract?.life,
+            p1_deck,
+            p1_hand
+          );
+
+          let player2: PlayerObject = new_player_object(
+            p2_addr,
+            p2_contract?.board.map((contract_card: any) =>
+              contract_card_to_card(contract_card)
+            ),
+            p2_contract?.deck_commitment,
+            p2_contract?.deck_size,
+            p2_contract?.graveyard.map((contract_card: any) =>
+              contract_card_to_card(contract_card)
+            ),
+            p2_contract?.hand_commitment,
+            p2_contract?.hand_size,
+            p2_contract?.id?.id,
+            p2_contract?.life,
+            p2_deck,
+            p2_hand
+          );
+          if (!player_1 || !player_2) {
+            setPlayer_1(player1);
+            setPlayer_2(player2);
+          } else {
+            JSON.stringify(player_1) !== JSON.stringify(player1)
+              ? setPlayer_1(player1)
+              : undefined;
+            JSON.stringify(player_2) !== JSON.stringify(player2)
+              ? setPlayer_2(player2)
+              : undefined;
+          }
+          router.replace(router.asPath);
+          console.log("Finished updating board state...");
+        } catch (err) {
+          console.log(err);
         }
-
-        let p1_deck = await update_deck(players.player_1.deck, currentPlayer1);
-        let p1_hand = await update_hand(players.player_1.hand, currentPlayer1);
-        let p2_deck = await update_deck(players.player_2.deck, currentPlayer2);
-        let p2_hand = await update_hand(players.player_2.hand, currentPlayer2);
-
-        let player1: PlayerObject = new_player_object(
-          p1_addr,
-          p1_contract?.board.map((contract_card: any) =>
-            contract_card_to_card(contract_card)
-          ),
-          p1_contract?.deck_commitment,
-          p1_contract?.deck_size,
-          p1_contract?.graveyard.map((contract_card: any) =>
-            contract_card_to_card(contract_card)
-          ),
-          p1_contract?.hand_commitment,
-          p1_contract?.hand_size,
-          p1_contract?.id?.id,
-          p1_contract?.life,
-          p1_deck,
-          p1_hand
-        );
-
-        let player2: PlayerObject = new_player_object(
-          p2_addr,
-          p2_contract?.board.map((contract_card: any) =>
-            contract_card_to_card(contract_card)
-          ),
-          p2_contract?.deck_commitment,
-          p2_contract?.deck_size,
-          p2_contract?.graveyard.map((contract_card: any) =>
-            contract_card_to_card(contract_card)
-          ),
-          p2_contract?.hand_commitment,
-          p2_contract?.hand_size,
-          p2_contract?.id?.id,
-          p2_contract?.life,
-          p2_deck,
-          p2_hand
-        );
-        if (!player_1 || !player_2) {
-          setPlayer_1(player1);
-          setPlayer_2(player2);
-        } else {
-          JSON.stringify(player_1) !== JSON.stringify(player1)
-            ? setPlayer_1(player1)
-            : undefined;
-          JSON.stringify(player_2) !== JSON.stringify(player2)
-            ? setPlayer_2(player2)
-            : undefined;
-        }
-        router.replace(router.asPath);
-        console.log("Finished updating board state...");
-      } catch (err) {
-        console.log(err);
       }
     }
 
@@ -528,13 +523,7 @@ export default function GamePage() {
         console.log(error);
       }
     }
-  }, [
-    is_player_1_turn,
-    game?.fields?.player_1?.fields,
-    game?.fields?.player_2?.fields,
-    player_1,
-    player_2,
-  ]);
+  }, [is_player_1_turn, game, player_1, player_2]);
 
   return (
     <>
