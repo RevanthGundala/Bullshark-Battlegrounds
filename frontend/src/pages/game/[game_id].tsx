@@ -1,3 +1,5 @@
+// TODO: Game needs to be refreshed manually to update state changes
+// still calls draw on player 1 even when its player 2's turn
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
@@ -33,13 +35,13 @@ import { useLocalStorage } from "usehooks-ts";
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
 
-  const [has_drawn, setHas_drawn] = useState(false);
+  const [isWaitingForDraw, setIsWaitingForDraw] = useState(false);
   const [isWaitingForDiscard, setIsWaitingForDiscard] = useState(false);
   const [isWaitingForPlay, setIsWaitingForPlay] = useState(false);
   const [isWaitingForAttack, setIsWaitingForAttack] = useState(false);
 
   const [is_player_1, setIs_player_1] = useState(false);
-  const [is_player_1_turn, setIs_player_1_turn] = useState(true); // TODO: change later - should just be true on first render (use local storage hook)
+  const [is_player_1_turn, setIs_player_1_turn] = useState(true);
 
   const [player_1, setPlayer_1] = useState<PlayerObject>();
   const [player_2, setPlayer_2] = useState<PlayerObject>();
@@ -53,7 +55,6 @@ export default function GamePage() {
 
   const [p1_addr, setP1_addr] = useLocalStorage("p1_addr", "");
   const [p2_addr, setP2_addr] = useLocalStorage("p2_addr", "");
-  const [provider_addr, setProvider_addr] = useLocalStorage("provider", "");
 
   const [game, setGame] = useState<any>();
 
@@ -90,6 +91,26 @@ export default function GamePage() {
 
   function toggle_isWaitingForAttack() {
     setIsWaitingForAttack(!isWaitingForAttack);
+  }
+
+  function match_game_state() {
+    console.log("Fetching game state...");
+    setIsWaitingForDraw(false);
+    setIsWaitingForDiscard(false);
+    setIsWaitingForPlay(false);
+    setIsWaitingForAttack(false);
+    const state: string = game?.fields?.state;
+    if (state === "10") {
+      setIsWaitingForDraw(true);
+    } else if (state === "11") {
+      setIsWaitingForDiscard(true);
+    } else if (state === "12") {
+      setIsWaitingForPlay(true);
+    } else if (state === "13") {
+      setIsWaitingForAttack(true);
+    } else {
+      console.log("game state is invalid");
+    }
   }
 
   function new_player_object(
@@ -270,15 +291,7 @@ export default function GamePage() {
   }
 
   async function draw_card(player: PlayerBackend) {
-    let discard = await draw(
-      wallet,
-      router.query.game_id as string,
-      is_player_1,
-      player
-    );
-    if (discard) {
-      setIsWaitingForDiscard(true);
-    }
+    await draw(wallet, router.query.game_id as string, is_player_1, player);
   }
 
   async function discard_card(card: Card, player: PlayerBackend) {
@@ -289,8 +302,6 @@ export default function GamePage() {
       is_player_1,
       player
     );
-    setIsWaitingForDiscard(false);
-    setIsWaitingForPlay(true);
   }
 
   async function play_card(card: Card, player: PlayerBackend) {
@@ -301,10 +312,6 @@ export default function GamePage() {
       is_player_1,
       player
     );
-
-    setIsWaitingForPlay(false);
-    router.replace(router.asPath);
-    setIsWaitingForAttack(true);
   }
 
   async function get_game_object(): Promise<any> {
@@ -318,13 +325,12 @@ export default function GamePage() {
       console.log(err);
     }
   }
-
   useEffect(() => {
     let updating = true;
     update_board_state();
-    // if (player_1 && player_2) {
-    //   turn_logic();
-    // }
+    if (player_1 && player_2) {
+      turn_logic();
+    }
     return () => {
       updating = false;
     };
@@ -346,7 +352,6 @@ export default function GamePage() {
         : undefined;
       console.log("Updating board state...");
       try {
-        // get fields from backend
         const response = await fetch("http://localhost:5002/api/get", {
           method: "GET",
           headers: {
@@ -354,22 +359,17 @@ export default function GamePage() {
           },
         });
         const players = await response.json();
-        // let p1_addr = players.player_1.address;
-        // let p2_addr = players.player_2.address;
         setP1_addr(players.player_1.address);
         setP2_addr(players.player_2.address);
         setIs_player_1(p1_addr === wallet?.address);
-        console.log("Is player 1: " + is_player_1);
-        console.log("addr: ", wallet?.address);
         if (!game) {
           console.log("game is undefined, cant update state");
           return;
         }
+        match_game_state();
         let p1_contract = game.fields.player_1.fields;
         let p2_contract = game.fields.player_2.fields;
-
         let currentPlayer1, currentPlayer2;
-
         if (!player_1 || !player_2) {
           [currentPlayer1, currentPlayer2] = new_default_players(
             p1_addr,
@@ -446,24 +446,17 @@ export default function GamePage() {
           console.log("Not updating turn logic");
           return;
         }
-        console.log("Turn logic started!");
         if (is_player_1_turn) {
+          console.log("Turn logic for player1");
           if (is_player_1) {
             if (player_1) {
               let player1 = get_player_backend(player_1);
-              if (
-                !has_drawn &&
-                !isWaitingForAttack &&
-                !isWaitingForDiscard &&
-                !isWaitingForPlay
-              ) {
-                setHas_drawn(true);
+              if (isWaitingForDraw) {
                 await draw_card(player1);
               }
               // will rerender on each state transition -> need to check ifs on each cond
-              else if (!isWaitingForDiscard && !isWaitingForAttack) {
-                setIsWaitingForPlay(true);
-              } else if (
+              else if (
+                !isWaitingForDraw &&
                 !isWaitingForAttack &&
                 !isWaitingForPlay &&
                 !isWaitingForDiscard
@@ -483,24 +476,18 @@ export default function GamePage() {
           if (!is_player_1) {
             if (player_2) {
               let player2 = get_player_backend(player_2);
-              console.log("Turn logic begins");
-              if (
-                !isWaitingForAttack &&
-                !isWaitingForDiscard &&
-                !isWaitingForPlay
-              ) {
+              console.log("Turn logic for player2");
+              if (isWaitingForDraw) {
                 await draw_card(player2);
               }
               // will rerender on each state transition -> need to check ifs on each cond
-              else if (!isWaitingForDiscard && !isWaitingForAttack) {
-                setIsWaitingForPlay(true);
-              } else if (
+              else if (
+                !isWaitingForDraw &&
                 !isWaitingForAttack &&
                 !isWaitingForPlay &&
                 !isWaitingForDiscard
               ) {
                 setIs_player_1_turn(true);
-                setHas_drawn(false);
               }
             } else {
               console.log("player 2 is undefined");
@@ -518,9 +505,8 @@ export default function GamePage() {
     game,
     player_1,
     player_2,
-    provider,
     router.query.game_id,
-    wallet?.contents?.nfts,
+    provider,
   ]);
 
   return (
@@ -625,6 +611,7 @@ export default function GamePage() {
                       router={router}
                       selected_cards_to_attack={selected_cards_to_attack}
                       selected_cards_to_defend={selected_cards_to_defend}
+                      is_player_1_turn={is_player_1_turn}
                     />
                   </div>
                   <div className="flex justify-center ">
@@ -763,7 +750,7 @@ export default function GamePage() {
               {/* FIRST DIV */}
               <div className="grid grid-cols-8 w-full min-h-ful gap-2 p-2 ">
                 <div className="w-full h-full p-2  ">
-                  {player_1 && player_1.hand && player_1.hand.length > 0 ? (
+                  {player_1 && player_1.deck && player_1.deck.length > 0 ? (
                     <Image
                       src="/images/cards/back.jpeg"
                       alt="enemy-deck"
@@ -849,6 +836,7 @@ export default function GamePage() {
                       router={router}
                       selected_cards_to_attack={selected_cards_to_attack}
                       selected_cards_to_defend={selected_cards_to_defend}
+                      is_player_1_turn={is_player_1_turn}
                     />
                   </div>
                   <div className="flex justify-center ">

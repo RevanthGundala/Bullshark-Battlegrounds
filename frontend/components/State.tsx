@@ -3,15 +3,6 @@ import { attack } from "../calls/move_calls";
 import { Wallet } from "ethos-connect";
 import { NextRouter } from "next/router";
 
-interface Card {
-  id: string;
-  name: string;
-  description: string;
-  attack: string;
-  defense: string;
-  image_url: string;
-}
-
 interface StateProps {
   isWaitingForDiscard: boolean;
   isWaitingForAttack: boolean;
@@ -21,6 +12,7 @@ interface StateProps {
   router: NextRouter;
   selected_cards_to_attack: number[] | null;
   selected_cards_to_defend: number[] | null;
+  is_player_1_turn: boolean;
 }
 
 async function attack_opponent(
@@ -57,15 +49,22 @@ const State: React.FC<StateProps> = ({
   router,
   selected_cards_to_attack,
   selected_cards_to_defend,
+  is_player_1_turn,
 }) => {
   return (
     <div>
       {isWaitingForDiscard ? (
-        <h1>Waiting for discard</h1>
+        <h1>
+          {is_player_1_turn
+            ? "Waiting for p1 discard"
+            : "Waiting for p2 discard"}
+        </h1>
       ) : (
         <>
           {isWaitingForPlay ? (
-            <h1>Waiting for play</h1>
+            <h1>
+              {is_player_1_turn ? "Waiting for p1 play" : "Waiting for p2 play"}
+            </h1>
           ) : (
             <>
               {isWaitingForAttack ? (

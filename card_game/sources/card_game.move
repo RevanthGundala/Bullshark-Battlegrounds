@@ -27,12 +27,19 @@ module card_game::card_game {
     const EDefendersNotSelectedCorrectly: u64 = 5;
     const ETooManyDefendingCharacters: u64 = 7;
     const EInvalid_Deck_Size: u64 = 8;
+    const EInvalid_State: u64 = 15;
+
+    // STATES
+    const IS_WAITING_FOR_DRAW: u64 = 10;
+    const IS_WAITING_FOR_DISCARD: u64 = 11; 
+    const IS_WAITING_FOR_PLAY: u64 = 12;
+    const IS_WAITING_FOR_ATTACK: u64 = 13;
     
     struct Game has key, store{
         id: UID,
         player_1: Player,
-        player_2: Player
-        //game_status: GameStatus, //TODO: Add game status + state of game (drawing, discarding, etc)
+        player_2: Player,
+        state: u64,
     }
 
     struct Player has key, store{
@@ -173,11 +180,11 @@ module card_game::card_game {
         let game = Game{
             id: object::new(ctx),
             player_1: player_1,
-            player_2: player_2
+            player_2: player_2,
+            state: IS_WAITING_FOR_DRAW, //TODO: Change to IS_WAITING_FOR_PLAY (first turn no draw)
         };
 
         transfer::transfer(game, challenge.challenger);
-
         let Challenge {id, challenger: _, opponent: _ } = challenge;
         object::delete(id);
     }
@@ -190,10 +197,9 @@ module card_game::card_game {
         new_hand_commitment: vector<u8>,
         new_deck_commitment: vector<u8>,
         ctx: &mut TxContext) {
-        let (attacking_player, defending_player) = get_players(game, ctx);
+        assert!(game.state == IS_WAITING_FOR_DRAW, EInvalid_State);
+        let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.deck_size > 0, EInvalid_Deck_Size);
-        // comment for testing
-
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EInvalid_Proof);
 
         // Place card in hand
@@ -201,6 +207,12 @@ module card_game::card_game {
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size + 1;
         attacking_player.deck_size = attacking_player.deck_size - 1;
+        if(attacking_player.hand_size > STARTING_HAND_SIZE){
+            game.state = IS_WAITING_FOR_DISCARD;
+        }
+        else{
+            game.state = IS_WAITING_FOR_PLAY;
+        };
     }
 
     public fun discard(
@@ -211,12 +223,14 @@ module card_game::card_game {
         card_to_discard: Card,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
+        assert!(game.state == IS_WAITING_FOR_DISCARD, EInvalid_State);
         let (attacking_player, _) = get_players(game, ctx);
         assert!(attacking_player.hand_size > STARTING_HAND_SIZE, EInvalid_Hand_Size);
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EInvalid_Proof);
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.graveyard, card_to_discard);
+        game.state = IS_WAITING_FOR_PLAY;
     }
 
     public fun play(
@@ -227,12 +241,13 @@ module card_game::card_game {
         card_to_play: Card,
         new_hand_commitment: vector<u8>,
         ctx: &mut TxContext) {
+        assert!(game.state == IS_WAITING_FOR_PLAY, EInvalid_State);
         let (attacking_player, _) = get_players(game, ctx);
         // assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), EInvalid_Proof);
-        
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.board, card_to_play);
+        game.state = IS_WAITING_FOR_ATTACK;
     }
     
     // attacking characters are the characters that are attacking
@@ -245,6 +260,7 @@ module card_game::card_game {
     defending_characters: vector<u64>, 
     direct_player_attacks: u64, 
     ctx: &mut TxContext){
+        assert!(game.state == IS_WAITING_FOR_ATTACK, EInvalid_State);
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
 
         let attacking_size = vector::length<u64>(&attacking_characters);
@@ -326,6 +342,7 @@ module card_game::card_game {
     public fun end_turn(game: Game, ctx: &mut TxContext) {
         let (_, defending_player) = get_players(&mut game, ctx);
         let defending_player_address = defending_player.addr;
+        game.state = IS_WAITING_FOR_DRAW; 
         transfer::transfer(game, defending_player_address);
         event::emit(TurnEnded{player: tx_context::sender(ctx)});
     }
@@ -369,11 +386,11 @@ module card_game::card_game {
             id: object::uid_to_inner(&game.id),
             winner: winner
         });
-       
         let Game{
             id: game_id,
             player_1: player_1,
             player_2: player_2,
+            state: _,
         } = game;
 
         let Player{
@@ -474,9 +491,4 @@ module card_game::card_game {
         object::delete(player_2_id);
         object::delete(game_id);
     } 
-
-    #[test]
-    public fun test_verify_proof(vk: vector<u8>, public_inputs_bytes: vector<u8>, proof_points_bytes: vector<u8>) {
-        assert!(verify_proof(vk, public_inputs_bytes, proof_points_bytes), 0);
-    }
 }
