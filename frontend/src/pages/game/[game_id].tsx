@@ -89,10 +89,6 @@ export default function GamePage() {
     deck: string[];
   }
 
-  function toggle_isWaitingForAttack() {
-    setIsWaitingForAttack(!isWaitingForAttack);
-  }
-
   function match_game_state() {
     console.log("Fetching game state...");
     setIsWaitingForDraw(false);
@@ -261,16 +257,28 @@ export default function GamePage() {
 
   async function handleCardClick(card: Card | undefined, index: number) {
     if (!card || !player_1 || !player_2) return;
-
-    let player1 = get_player_backend(player_1);
-    let player2 = get_player_backend(player_2);
+    let player = is_player_1_turn
+      ? get_player_backend(player_1)
+      : get_player_backend(player_2);
 
     if (isWaitingForDiscard) {
       console.log("Discarding...");
-      await discard_card(card, is_player_1 ? player1 : player2);
+      await discard(
+        wallet,
+        router.query.game_id as string,
+        card.id,
+        is_player_1,
+        player
+      );
     } else if (isWaitingForPlay) {
       console.log("Playing...");
-      await play_card(card, is_player_1 ? player1 : player2);
+      await play(
+        wallet,
+        router.query.game_id as string,
+        card.id || "1",
+        is_player_1,
+        player
+      );
     } else if (isWaitingForAttack) {
       // if card belongs to player 1 -> attacking
       if (
@@ -290,37 +298,13 @@ export default function GamePage() {
     }
   }
 
-  async function draw_card(player: PlayerBackend) {
-    await draw(wallet, router.query.game_id as string, is_player_1, player);
-  }
-
-  async function discard_card(card: Card, player: PlayerBackend) {
-    await discard(
-      wallet,
-      router.query.game_id as string,
-      card.id || "1",
-      is_player_1,
-      player
-    );
-  }
-
-  async function play_card(card: Card, player: PlayerBackend) {
-    await play(
-      wallet,
-      router.query.game_id as string,
-      card.id || "1",
-      is_player_1,
-      player
-    );
-  }
-
   async function get_game_object(): Promise<any> {
     try {
       const res = await provider?.getObject({
         id: router.query.game_id as string,
-        options: { showContent: true },
+        options: { showContent: true, showOwner: true },
       });
-      return res?.data?.content;
+      return res;
     } catch (err) {
       console.log(err);
     }
@@ -328,9 +312,9 @@ export default function GamePage() {
   useEffect(() => {
     let updating = true;
     update_board_state();
-    if (player_1 && player_2) {
-      turn_logic();
-    }
+    // if (player_1 && player_2) {
+    //   turn_logic();
+    // }
     return () => {
       updating = false;
     };
@@ -345,12 +329,6 @@ export default function GamePage() {
         console.log("Provider is undefined");
         return;
       }
-      console.log("Getting game...");
-      let game_object = await get_game_object();
-      JSON.stringify(game_object) !== JSON.stringify(game)
-        ? setGame(game_object)
-        : undefined;
-      console.log("Updating board state...");
       try {
         const response = await fetch("http://localhost:5002/api/get", {
           method: "GET",
@@ -362,10 +340,22 @@ export default function GamePage() {
         setP1_addr(players.player_1.address);
         setP2_addr(players.player_2.address);
         setIs_player_1(p1_addr === wallet?.address);
+
+        console.log("Getting game...");
+        let game_object = await get_game_object();
+        let game_content = game_object?.data?.content;
+        JSON.stringify(game_content) !== JSON.stringify(game)
+          ? setGame(game_content)
+          : undefined;
+        console.log("Updating board state...");
         if (!game) {
           console.log("game is undefined, cant update state");
           return;
         }
+        const owner = game_object?.data?.owner.AddressOwner;
+        p1_addr === owner
+          ? setIs_player_1_turn(true)
+          : setIs_player_1_turn(false);
         match_game_state();
         let p1_contract = game.fields.player_1.fields;
         let p2_contract = game.fields.player_2.fields;
@@ -446,56 +436,15 @@ export default function GamePage() {
           console.log("Not updating turn logic");
           return;
         }
-        if (is_player_1_turn) {
-          console.log("Turn logic for player1");
-          if (is_player_1) {
-            if (player_1) {
-              let player1 = get_player_backend(player_1);
-              if (isWaitingForDraw) {
-                await draw_card(player1);
-              }
-              // will rerender on each state transition -> need to check ifs on each cond
-              else if (
-                !isWaitingForDraw &&
-                !isWaitingForAttack &&
-                !isWaitingForPlay &&
-                !isWaitingForDiscard
-              ) {
-                console.log("Setting is_player_1_turn to false");
-                setIs_player_1_turn(false);
-              }
-            } else {
-              console.log("player 1 is undefined");
-            }
-          } else {
-            console.log("You are player2");
-          }
-        }
-        // player 2's turn
-        else {
-          if (!is_player_1) {
-            if (player_2) {
-              let player2 = get_player_backend(player_2);
-              console.log("Turn logic for player2");
-              if (isWaitingForDraw) {
-                await draw_card(player2);
-              }
-              // will rerender on each state transition -> need to check ifs on each cond
-              else if (
-                !isWaitingForDraw &&
-                !isWaitingForAttack &&
-                !isWaitingForPlay &&
-                !isWaitingForDiscard
-              ) {
-                setIs_player_1_turn(true);
-              }
-            } else {
-              console.log("player 2 is undefined");
-            }
-          } else {
-            console.log("You are player1");
-          }
-        }
+        let player =
+          is_player_1_turn && is_player_1 && player_1
+            ? get_player_backend(player_1)
+            : !is_player_1_turn && !is_player_1 && player_2
+            ? get_player_backend(player_2)
+            : undefined;
+        player
+          ? draw(wallet, router.query.game_id as string, is_player_1, player)
+          : undefined;
       } catch (error) {
         console.log(error);
       }
@@ -603,14 +552,15 @@ export default function GamePage() {
                   </div>
                   <div className="flex justify-center">
                     <State
+                      isWaitingForDraw={isWaitingForDraw}
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
-                      toggle_isWaitingForAttack={toggle_isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
                       wallet={wallet}
                       router={router}
                       selected_cards_to_attack={selected_cards_to_attack}
                       selected_cards_to_defend={selected_cards_to_defend}
+                      is_player_1={is_player_1}
                       is_player_1_turn={is_player_1_turn}
                     />
                   </div>
@@ -828,14 +778,15 @@ export default function GamePage() {
                   </div>
                   <div className="flex justify-center">
                     <State
+                      isWaitingForDraw={isWaitingForDraw}
                       isWaitingForDiscard={isWaitingForDiscard}
                       isWaitingForAttack={isWaitingForAttack}
-                      toggle_isWaitingForAttack={toggle_isWaitingForAttack}
                       isWaitingForPlay={isWaitingForPlay}
                       wallet={wallet}
                       router={router}
                       selected_cards_to_attack={selected_cards_to_attack}
                       selected_cards_to_defend={selected_cards_to_defend}
+                      is_player_1={is_player_1}
                       is_player_1_turn={is_player_1_turn}
                     />
                   </div>
