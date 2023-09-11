@@ -1,5 +1,3 @@
-// TODO: Game needs to be refreshed manually to update state changes
-// still calls draw on player 1 even when its player 2's turn
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
@@ -56,6 +54,7 @@ export default function GamePage() {
   const [p1_addr, setP1_addr] = useLocalStorage("p1_addr", "");
   const [p2_addr, setP2_addr] = useLocalStorage("p2_addr", "");
 
+  const [game_object, setGame_object] = useState<any>();
   const [game, setGame] = useState<any>();
 
   const router = useRouter();
@@ -250,7 +249,6 @@ export default function GamePage() {
         }
       }
     }
-
     player.hand = player.hand?.filter((card) => hand_set.has(card.id)) || [];
     return player.hand;
   }
@@ -260,7 +258,6 @@ export default function GamePage() {
     let player = is_player_1_turn
       ? get_player_backend(player_1)
       : get_player_backend(player_2);
-
     if (isWaitingForDiscard) {
       console.log("Discarding...");
       await discard(
@@ -295,16 +292,23 @@ export default function GamePage() {
         }
         console.log("Defending: " + selected_cards_to_defend);
       }
+    } else {
+      console.log("Card clicked and not your turn");
     }
   }
-
+  // TODO: Game needs to be refreshed manually to update state changes
+  // this func wont be called for the opponent player
+  setInterval(async () => {
+    const obj = await get_game_object();
+    setGame_object(obj);
+    // Do something with the game object if needed
+  }, 5000); // 5000 milliseconds = 5 seconds
   async function get_game_object(): Promise<any> {
     try {
-      const res = await provider?.getObject({
+      return await provider?.getObject({
         id: router.query.game_id as string,
         options: { showContent: true, showOwner: true },
       });
-      return res;
     } catch (err) {
       console.log(err);
     }
@@ -321,15 +325,12 @@ export default function GamePage() {
 
     // first render, it will be player 1 turn
     async function update_board_state() {
-      if (!updating) {
+      if (!updating || !provider) {
         console.log("Not updating board state");
         return;
       }
-      if (!provider) {
-        console.log("Provider is undefined");
-        return;
-      }
       try {
+        console.log("Updating board state...");
         const response = await fetch("http://localhost:5002/api/get", {
           method: "GET",
           headers: {
@@ -340,20 +341,15 @@ export default function GamePage() {
         setP1_addr(players.player_1.address);
         setP2_addr(players.player_2.address);
         setIs_player_1(p1_addr === wallet?.address);
-
-        console.log("Getting game...");
-        let game_object = await get_game_object();
         let game_content = game_object?.data?.content;
         JSON.stringify(game_content) !== JSON.stringify(game)
           ? setGame(game_content)
           : undefined;
-        console.log("Updating board state...");
         if (!game) {
           console.log("game is undefined, cant update state");
           return;
         }
-        const owner = game_object?.data?.owner.AddressOwner;
-        p1_addr === owner
+        p1_addr === game_object?.data?.owner.AddressOwner
           ? setIs_player_1_turn(true)
           : setIs_player_1_turn(false);
         match_game_state();
@@ -371,7 +367,6 @@ export default function GamePage() {
           currentPlayer1 = player_1;
           currentPlayer2 = player_2;
         }
-
         let p1_deck = await update_deck(players.player_1.deck, currentPlayer1);
         let p1_hand = await update_hand(players.player_1.hand, currentPlayer1);
         let p2_deck = await update_deck(players.player_2.deck, currentPlayer2);
@@ -423,7 +418,6 @@ export default function GamePage() {
             ? setPlayer_2(player2)
             : undefined;
         }
-        router.replace(router.asPath);
         console.log("Finished updating board state...");
       } catch (err) {
         console.log(err);
@@ -436,13 +430,15 @@ export default function GamePage() {
           console.log("Not updating turn logic");
           return;
         }
+        console.log("Updating turn logic...");
         let player =
           is_player_1_turn && is_player_1 && player_1
             ? get_player_backend(player_1)
             : !is_player_1_turn && !is_player_1 && player_2
             ? get_player_backend(player_2)
             : undefined;
-        player
+
+        player && isWaitingForDraw
           ? draw(wallet, router.query.game_id as string, is_player_1, player)
           : undefined;
       } catch (error) {
@@ -456,6 +452,7 @@ export default function GamePage() {
     player_2,
     router.query.game_id,
     provider,
+    wallet?.contents?.nfts,
   ]);
 
   return (
@@ -496,7 +493,19 @@ export default function GamePage() {
                 <div className="w-full h-full p-2 "></div>
                 <div className="w-full h-full p-2 "></div>
                 <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 "></div>
+                <div className="w-full h-full p-2 ">
+                  {player_2 &&
+                  player_2.graveyard &&
+                  player_2.graveyard.length > 0 ? (
+                    <Image
+                      src="/images/cards/front.png"
+                      alt="enemy-deck"
+                      style={{ width: "100px", height: "auto" }}
+                    />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-full gap-2 p-2 ">
                 <div className="w-full h-full p-2 "></div>
@@ -723,7 +732,19 @@ export default function GamePage() {
                 <div className="w-full h-full p-2"></div>
                 <div className="w-full h-full p-2"></div>
                 <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2"></div>
+                <div className="w-full h-full p-2">
+                  {player_1 &&
+                  player_1.graveyard &&
+                  player_1.graveyard.length > 0 ? (
+                    <Image
+                      src="/images/cards/front.png"
+                      alt="enemy-deck"
+                      style={{ width: "100px", height: "auto" }}
+                    />
+                  ) : (
+                    <Image></Image>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-8 w-full min-h-fullgap-2 p-2 ">
                 <div className="w-full h-full p-2 "></div>
