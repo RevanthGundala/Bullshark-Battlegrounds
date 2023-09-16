@@ -110,8 +110,8 @@ export const draw = async (
   game_id: string,
   is_player_1: boolean,
   player: PlayerBackend
-) => {
-  if (!wallet) return;
+): Promise<boolean> => {
+  if (!wallet) return false;
   try {
     let vk: string = "";
     let public_inputs_bytes: string = "";
@@ -149,9 +149,10 @@ export const draw = async (
       discard = true;
     }
     await insert_updated_players(is_player_1, player);
-    return discard;
+    return true;
   } catch (error) {
     console.log(error);
+    return false;
   }
 };
 

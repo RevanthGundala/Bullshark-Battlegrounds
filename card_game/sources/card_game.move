@@ -230,7 +230,12 @@ module card_game::card_game {
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.graveyard, card_to_discard);
-        game.state = IS_WAITING_FOR_PLAY;
+        if(attacking_player.hand_size == STARTING_HAND_SIZE){
+            game.state = IS_WAITING_FOR_PLAY;
+        }
+        else{
+            game.state = IS_WAITING_FOR_DISCARD;
+        };
     }
 
     public fun play(

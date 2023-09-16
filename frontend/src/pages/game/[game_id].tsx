@@ -32,8 +32,8 @@ import { useLocalStorage } from "usehooks-ts";
 
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
-  // const [isLoading, setIsLoading] = useState(false);
 
+  const [has_drawn, setHas_drawn] = useState(false);
   const [isWaitingForDraw, setIsWaitingForDraw] = useState(false);
   const [isWaitingForDiscard, setIsWaitingForDiscard] = useState(false);
   const [isWaitingForPlay, setIsWaitingForPlay] = useState(false);
@@ -57,8 +57,6 @@ export default function GamePage() {
 
   const [game_object, setGame_object] = useState<any>();
   const [game, setGame] = useState<any>();
-
-  const [intervalId, setIntervalId] = useState<any>();
 
   const router = useRouter();
 
@@ -104,12 +102,13 @@ export default function GamePage() {
       setIsWaitingForDraw(true);
     } else if (state === "11") {
       setIsWaitingForDiscard(true);
+      setHas_drawn(false);
     } else if (state === "12") {
       setIsWaitingForPlay(true);
     } else if (state === "13") {
       setIsWaitingForAttack(true);
     } else {
-      console.log("game state is invalid");
+      console.log("match_game_state: game state is invalid");
     }
   }
 
@@ -301,17 +300,13 @@ export default function GamePage() {
       console.log("Card clicked and not your turn");
     }
   }
-  // TODO: Game needs to be refreshed manually to update state changes
-  // this func wont be called for the opponent player
   async function set_game_object() {
     try {
-      console.log("SETTING GAME OBJECT");
       let game_obj = await provider?.getObject({
         id: router.query.game_id as string,
         options: { showContent: true, showOwner: true },
       });
       if (JSON.stringify(game_obj) !== JSON.stringify(game_object)) {
-        console.log("GAME OBJECT HAS CHANGED");
         setGame_object(game_obj);
         setGame(game_obj?.data?.content);
       }
@@ -322,9 +317,7 @@ export default function GamePage() {
   useEffect(() => {
     let updating = true;
     update_board_state();
-    if (player_1 && player_2) {
-      turn_logic();
-    }
+
     id = setInterval(() => {
       if (
         (is_player_1 && !is_player_1_turn) ||
@@ -333,13 +326,11 @@ export default function GamePage() {
         set_game_object();
       }
     }, 5000);
-    setIntervalId(id);
     return () => {
       clearInterval(id);
       updating = false;
     };
 
-    // first render, it will be player 1 turn
     async function update_board_state() {
       if (!updating || !provider) {
         console.log("Not updating board state");
@@ -435,28 +426,39 @@ export default function GamePage() {
             ? setPlayer_2(player2)
             : undefined;
         }
+        if (player_1 && player_2 && isWaitingForDraw) {
+          await draw_logic();
+        }
         console.log("Finished updating board state...");
       } catch (err) {
         console.log(err);
       }
     }
 
-    async function turn_logic() {
+    async function draw_logic() {
       try {
         if (!updating) {
-          console.log("Not updating turn logic");
+          console.log("Not updating draw logic");
           return;
         }
-        console.log("Updating turn logic...");
+        console.log("Updating draw logic...");
         let player =
           is_player_1_turn && is_player_1 && player_1
             ? get_player_backend(player_1)
             : !is_player_1_turn && !is_player_1 && player_2
             ? get_player_backend(player_2)
             : undefined;
-        player && isWaitingForDraw
-          ? draw(wallet, router.query.game_id as string, is_player_1, player)
-          : undefined;
+        // let draw_success = false;
+        let success;
+        if (player && !has_drawn) {
+          setHas_drawn(true);
+          success = await draw(
+            wallet,
+            router.query.game_id as string,
+            is_player_1,
+            player
+          );
+        }
       } catch (error) {
         console.log(error);
       }
