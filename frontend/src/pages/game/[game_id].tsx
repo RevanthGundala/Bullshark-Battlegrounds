@@ -32,6 +32,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
+  // const [isLoading, setIsLoading] = useState(false);
 
   const [isWaitingForDraw, setIsWaitingForDraw] = useState(false);
   const [isWaitingForDiscard, setIsWaitingForDiscard] = useState(false);
@@ -56,6 +57,8 @@ export default function GamePage() {
 
   const [game_object, setGame_object] = useState<any>();
   const [game, setGame] = useState<any>();
+
+  const [intervalId, setIntervalId] = useState<any>();
 
   const router = useRouter();
 
@@ -88,7 +91,9 @@ export default function GamePage() {
     deck: string[];
   }
 
-  function match_game_state() {
+  let id: any;
+
+  async function match_game_state() {
     console.log("Fetching game state...");
     setIsWaitingForDraw(false);
     setIsWaitingForDiscard(false);
@@ -298,17 +303,18 @@ export default function GamePage() {
   }
   // TODO: Game needs to be refreshed manually to update state changes
   // this func wont be called for the opponent player
-  setInterval(async () => {
-    const obj = await get_game_object();
-    setGame_object(obj);
-    // Do something with the game object if needed
-  }, 5000); // 5000 milliseconds = 5 seconds
-  async function get_game_object(): Promise<any> {
+  async function set_game_object() {
     try {
-      return await provider?.getObject({
+      console.log("SETTING GAME OBJECT");
+      let game_obj = await provider?.getObject({
         id: router.query.game_id as string,
         options: { showContent: true, showOwner: true },
       });
+      if (JSON.stringify(game_obj) !== JSON.stringify(game_object)) {
+        console.log("GAME OBJECT HAS CHANGED");
+        setGame_object(game_obj);
+        setGame(game_obj?.data?.content);
+      }
     } catch (err) {
       console.log(err);
     }
@@ -316,10 +322,20 @@ export default function GamePage() {
   useEffect(() => {
     let updating = true;
     update_board_state();
-    // if (player_1 && player_2) {
-    //   turn_logic();
-    // }
+    if (player_1 && player_2) {
+      turn_logic();
+    }
+    id = setInterval(() => {
+      if (
+        (is_player_1 && !is_player_1_turn) ||
+        (!is_player_1 && is_player_1_turn)
+      ) {
+        set_game_object();
+      }
+    }, 5000);
+    setIntervalId(id);
     return () => {
+      clearInterval(id);
       updating = false;
     };
 
@@ -338,21 +354,22 @@ export default function GamePage() {
           },
         });
         const players = await response.json();
-        setP1_addr(players.player_1.address);
-        setP2_addr(players.player_2.address);
-        setIs_player_1(p1_addr === wallet?.address);
-        let game_content = game_object?.data?.content;
-        JSON.stringify(game_content) !== JSON.stringify(game)
-          ? setGame(game_content)
+        players.player_1.address !== p1_addr
+          ? setP1_addr(players.player_1.address)
           : undefined;
-        if (!game) {
+        players.player_2.address !== p2_addr
+          ? setP2_addr(players.player_2.address)
+          : undefined;
+        setIs_player_1(p1_addr === wallet?.address);
+        await set_game_object();
+        if (!game_object) {
           console.log("game is undefined, cant update state");
           return;
         }
         p1_addr === game_object?.data?.owner.AddressOwner
           ? setIs_player_1_turn(true)
           : setIs_player_1_turn(false);
-        match_game_state();
+        await match_game_state();
         let p1_contract = game.fields.player_1.fields;
         let p2_contract = game.fields.player_2.fields;
         let currentPlayer1, currentPlayer2;
@@ -437,7 +454,6 @@ export default function GamePage() {
             : !is_player_1_turn && !is_player_1 && player_2
             ? get_player_backend(player_2)
             : undefined;
-
         player && isWaitingForDraw
           ? draw(wallet, router.query.game_id as string, is_player_1, player)
           : undefined;
@@ -451,8 +467,8 @@ export default function GamePage() {
     player_1,
     player_2,
     router.query.game_id,
-    provider,
     wallet?.contents?.nfts,
+    provider,
   ]);
 
   return (
