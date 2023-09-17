@@ -2,6 +2,7 @@
 // Transfers game between players on each turn
 // Player's turn is determined by who owns the object
 
+#[allow(unused_variable)]
 module card_game::card_game {
     use sui::object::{Self, UID, ID};
     use sui::transfer;
@@ -11,9 +12,10 @@ module card_game::card_game {
     use sui::event;
     use std::vector;
     use sui::groth16;
+    use std::debug;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 20;
+    const STARTING_HEALTH: u64 = 1;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
@@ -330,21 +332,31 @@ module card_game::card_game {
             }   
             // attack the player
             else{
-                defending_player.life = defending_player.life - attacking_character.type.attack;
-                // Game is over check
-                if(defending_player.life <= 0){
-                    game_over = true;
-                    break
-                };
-                /*
-                 if(defending_player.life - attacking_character.type.attack <= 0){
-                    game_over = true;
-                    break
+                // defending_player.life = defending_player.life - attacking_character.type.attack;
+                // // Game is over check
+                // if(defending_player.life <= 0){
+                //     game_over = true;
+                //     break
+                // };
+                
+                //  if(defending_player.life - attacking_character.type.attack <= 0){
+                //     defending_player.life = 0;
+                //     game_over = true;
+                //     break
+                // }
+                // else{
+                //     defending_player.life = defending_player.life - attacking_character.type.attack;
+                // };
+
+                if(defending_player.life > attacking_character.type.attack){
+                    defending_player.life = defending_player.life - attacking_character.type.attack;
                 }
                 else{
-                    defending_player.life = defending_player.life - attacking_character.type.attack;
+                    defending_player.life = 0;
+                    game_over = true;
+                    break
                 };
-                */
+                
             };
             i = i + 1;
         };
@@ -362,6 +374,9 @@ module card_game::card_game {
         let (attacking_player, defending_player) = get_players(&mut game, ctx);
         attacking_player.played_character_this_turn = false;
         let defending_player_address = defending_player.addr;
+        // if(attacking_player.hand_size > STARTING_HAND_SIZE) {
+        //     discard()
+        // }
         if (defending_player.deck_size > 0) {
             game.state = IS_WAITING_FOR_DRAW;
         }
@@ -455,7 +470,7 @@ module card_game::card_game {
             i = i + 1;
         };
 
-        vector::destroy_empty(player_1_graveyard);
+        
         i = 0;
         while(i < vector::length<Card>(&player_2_graveyard)){
             let card = vector::pop_back<Card>(&mut player_2_graveyard);
@@ -472,8 +487,9 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-        vector::destroy_empty(player_2_graveyard);
+       
         i = 0;
+        debug::print(&vector::length<Card>(&player_1_board));
         while(i < vector::length<Card>(&player_1_board)){
             let card = vector::pop_back<Card>(&mut player_1_board);
             let Card{
@@ -489,7 +505,7 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-        vector::destroy_empty(player_1_board);
+        
         i = 0;
         while(i < vector::length<Card>(&player_2_board)){
             let card = vector::pop_back<Card>(&mut player_2_board);
@@ -506,10 +522,55 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-        vector::destroy_empty(player_2_board);
 
+        vector::destroy_empty(player_1_graveyard);
+        vector::destroy_empty(player_2_graveyard);
+        vector::destroy_empty(player_1_board);
+        vector::destroy_empty(player_2_board);
+        
         object::delete(player_1_id);
         object::delete(player_2_id);
         object::delete(game_id);
     } 
+
+    // #[test]
+    // fun test_workflow() {
+    //     use sui::test_scenario;
+
+    //     // create test addresses representing users
+    //     let admin = @0xBABE;
+    //     let player_1 = @0xCAFE;
+    //     let player_2 = @0xFACE;
+
+    //     // first transaction to emulate module initialization
+    //     let scenario_val = test_scenario::begin(admin);
+    //     let scenario = &mut scenario_val;
+    //     // second transaction executed by admin to create the sword
+    //     {
+    //         // create the sword and transfer it to the initial owner
+    //         challenge_person(player_2, test_scenario::ctx(scenario));
+    //     };
+    //     // third transaction executed by the initial sword owner
+    //     test_scenario::next_tx(scenario, player_2);
+    //     {
+    //         // extract the sword owned by the initial owner
+    //         let challenge = test_scenario::take_from_sender<Challenge>(scenario);
+    //         // transfer the sword to the final owner
+    //         accept_challenge(challenge, test_scenario::ctx(scenario));
+    //     };
+    //     // fourth transaction executed by the final sword owner
+    //     test_scenario::next_tx(scenario, player_1);
+    //     {
+    //         draw(
+    //             test_scenario::take_from_sender<Game>(scenario),
+    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
+    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
+    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
+    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
+    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
+    //             test_scenario::ctx(scenario)
+    //         );
+    //     };
+    //     test_scenario::end(scenario_val);
+    // }
 }
