@@ -262,6 +262,7 @@ module card_game::card_game {
     // defending characters are the characters that are being attacked
     // direct_player_attacks is the number of attacking characters
     //  that are going directly to the player
+    // TODO: Change attack logic so that it must attack defending players board if defending_characters is empty before enemy player
     public fun attack(
         game: Game, 
     attacking_characters: vector<u64>, 
@@ -317,7 +318,7 @@ module card_game::card_game {
                     };
 
                     if(remove_defending_character) {
-                         vector::push_back<Card>(&mut defending_player.graveyard, 
+                        vector::push_back<Card>(&mut defending_player.graveyard, 
                         vector::remove<Card>(&mut defending_player.board, defending_player_index));
                     };
 
@@ -335,6 +336,15 @@ module card_game::card_game {
                     game_over = true;
                     break
                 };
+                /*
+                 if(defending_player.life - attacking_character.type.attack <= 0){
+                    game_over = true;
+                    break
+                }
+                else{
+                    defending_player.life = defending_player.life - attacking_character.type.attack;
+                };
+                */
             };
             i = i + 1;
         };
