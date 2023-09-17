@@ -11,7 +11,6 @@ module card_game::card_game {
     use sui::event;
     use std::vector;
     use sui::groth16;
-    use sui::ecvrf;
     
     // CONSTANTS
     const STARTING_HEALTH: u64 = 20;
@@ -52,6 +51,7 @@ module card_game::card_game {
         graveyard: vector<Card>,
         board: vector<Card>,
         life: u64,
+        played_character_this_turn: bool,
     }
 
     /*  
@@ -164,6 +164,7 @@ module card_game::card_game {
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
+            played_character_this_turn: false,
         };
         let player_2 = Player{
             id: object::new(ctx),
@@ -175,6 +176,7 @@ module card_game::card_game {
             graveyard: vector<Card>[],
             board: vector<Card>[],
             life: STARTING_HEALTH,
+            played_character_this_turn: false,
         };
 
         let game = Game{
@@ -252,6 +254,7 @@ module card_game::card_game {
         attacking_player.hand_commitment = new_hand_commitment;
         attacking_player.hand_size = attacking_player.hand_size - 1;
         vector::push_back(&mut attacking_player.board, card_to_play);
+        attacking_player.played_character_this_turn = true;
         game.state = IS_WAITING_FOR_ATTACK;
     }
     
@@ -259,6 +262,7 @@ module card_game::card_game {
     // defending characters are the characters that are being attacked
     // direct_player_attacks is the number of attacking characters
     //  that are going directly to the player
+    // TODO: Change attack logic so that it must attack defending players board if defending_characters is empty before enemy player
     public fun attack(
         game: Game, 
     attacking_characters: vector<u64>, 
@@ -274,14 +278,15 @@ module card_game::card_game {
         let attacking_board_size = vector::length<Card>(&attacking_player.board);
         let defending_board_size = vector::length<Card>(&defending_player.board);
 
-       
         assert!(attacking_size <= attacking_board_size, EAttackersNotSelectedCorrectly);
         // I.e. user can't select 2 characters and attack 3 objects
         assert!(attacking_size <= defending_size + direct_player_attacks, ETooManyDefendingCharacters); 
-        assert!(defending_size <= defending_board_size, EDefendersNotSelectedCorrectly);        
-
+        assert!(defending_size <= defending_board_size, EDefendersNotSelectedCorrectly);  
+        // User cannot attack with character that was played this turn      
+        if(attacking_player.played_character_this_turn){
+            assert!(!vector::contains(&attacking_characters, &(attacking_board_size - 1)), EAttackersNotSelectedCorrectly);
+        };
         let game_over = false;
-        
         // iterate over all attacking_characters and attack resepective opponent
         let i = 0;
         while(i < attacking_size){
@@ -313,7 +318,7 @@ module card_game::card_game {
                     };
 
                     if(remove_defending_character) {
-                         vector::push_back<Card>(&mut defending_player.graveyard, 
+                        vector::push_back<Card>(&mut defending_player.graveyard, 
                         vector::remove<Card>(&mut defending_player.board, defending_player_index));
                     };
 
@@ -331,6 +336,15 @@ module card_game::card_game {
                     game_over = true;
                     break
                 };
+                /*
+                 if(defending_player.life - attacking_character.type.attack <= 0){
+                    game_over = true;
+                    break
+                }
+                else{
+                    defending_player.life = defending_player.life - attacking_character.type.attack;
+                };
+                */
             };
             i = i + 1;
         };
@@ -345,9 +359,15 @@ module card_game::card_game {
     }
 
     public fun end_turn(game: Game, ctx: &mut TxContext) {
-        let (_, defending_player) = get_players(&mut game, ctx);
+        let (attacking_player, defending_player) = get_players(&mut game, ctx);
+        attacking_player.played_character_this_turn = false;
         let defending_player_address = defending_player.addr;
-        game.state = IS_WAITING_FOR_DRAW; 
+        if (defending_player.deck_size > 0) {
+            game.state = IS_WAITING_FOR_DRAW;
+        }
+        else{
+            game.state = IS_WAITING_FOR_PLAY;
+        };
         transfer::transfer(game, defending_player_address);
         event::emit(TurnEnded{player: tx_context::sender(ctx)});
     }
@@ -376,12 +396,6 @@ module card_game::card_game {
         is_verified
     }
 
-    // public fun verify_ecvrf_output(output: vector<u8>, alpha_string: vector<u8>, public_key: vector<u8>, proof: vector<u8>): bool {
-    //     let is_verified = ecvrf::ecvrf_verify(&output, &alpha_string, &public_key, &proof);
-    //     event::emit(VerifiedEvent {is_verified: is_verified});
-    //     is_verified
-    // }
-
     /////////////////////////
     /// Private Functions ///
     /////////////////////////
@@ -408,6 +422,7 @@ module card_game::card_game {
             graveyard: player_1_graveyard,
             board: player_1_board,
             life: _,
+            played_character_this_turn: _,
         } = player_1;
 
         let Player{
@@ -420,6 +435,7 @@ module card_game::card_game {
             graveyard: player_2_graveyard,
             board: player_2_board,
             life: _,
+            played_character_this_turn: _,
         } = player_2;
 
         let i = 0;

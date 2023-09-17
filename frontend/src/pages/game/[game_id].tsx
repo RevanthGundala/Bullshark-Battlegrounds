@@ -30,6 +30,9 @@ import {
 import State from "../../../components/State";
 import { useLocalStorage } from "usehooks-ts";
 
+//TODO: Add logic for when a player wins
+//TODO: Fix Attack logic
+
 export default function GamePage() {
   const { wallet, provider } = ethos.useWallet();
 
@@ -81,6 +84,7 @@ export default function GamePage() {
     life: number;
     deck: Card[] | undefined;
     hand: Card[] | undefined;
+    played_card_this_turn: boolean;
   }
 
   interface PlayerBackend {
@@ -102,11 +106,13 @@ export default function GamePage() {
       setIsWaitingForDraw(true);
     } else if (state === "11") {
       setIsWaitingForDiscard(true);
-      setHas_drawn(false);
     } else if (state === "12") {
       setIsWaitingForPlay(true);
     } else if (state === "13") {
       setIsWaitingForAttack(true);
+      setSelected_cards_to_attack([]);
+      setSelected_cards_to_defend([]);
+      setHas_drawn(false);
     } else {
       console.log("match_game_state: game state is invalid");
     }
@@ -116,20 +122,21 @@ export default function GamePage() {
     address: string,
     board: Card[] | undefined,
     deck_commitment: string,
-    deck_sizse: number,
+    deck_size: number,
     graveyard: Card[] | undefined,
     hand_commitment: string,
     hand_size: number,
     id: string,
     life: number,
     deck: Card[] | undefined,
-    hand: Card[] | undefined
+    hand: Card[] | undefined,
+    played_card_this_turn: boolean
   ): PlayerObject {
     return {
       address: address,
       board: board,
       deck_commitment: deck_commitment,
-      deck_size: deck_sizse,
+      deck_size: deck_size,
       graveyard: graveyard,
       hand_commitment: hand_commitment,
       hand_size: hand_size,
@@ -137,6 +144,7 @@ export default function GamePage() {
       life: life,
       deck: deck,
       hand: hand,
+      played_card_this_turn: played_card_this_turn,
     };
   }
 
@@ -157,7 +165,8 @@ export default function GamePage() {
       p1_contract?.id?.id,
       p1_contract?.life,
       [],
-      []
+      [],
+      false
     );
 
     const defaultPlayer2 = new_player_object(
@@ -171,7 +180,8 @@ export default function GamePage() {
       p2_contract?.id?.id,
       p2_contract?.life,
       [],
-      []
+      [],
+      false
     );
     return [defaultPlayer1, defaultPlayer2];
   }
@@ -281,12 +291,15 @@ export default function GamePage() {
         player
       );
     } else if (isWaitingForAttack) {
-      // if card belongs to player 1 -> attacking
       if (
         (player_1?.board?.includes(card) && is_player_1) ||
         (player_2?.board?.includes(card) && !is_player_1)
       ) {
-        if (!selected_cards_to_attack?.includes(index)) {
+        if (
+          !selected_cards_to_attack?.includes(index) &&
+          !player_1.played_card_this_turn &&
+          !player_2.played_card_this_turn
+        ) {
           selected_cards_to_attack?.push(index);
         }
         console.log("Attacking: " + selected_cards_to_attack?.length);
@@ -395,7 +408,8 @@ export default function GamePage() {
           p1_contract?.id?.id,
           p1_contract?.life,
           p1_deck,
-          p1_hand
+          p1_hand,
+          p1_contract?.played_card_this_turn
         );
 
         let player2: PlayerObject = new_player_object(
@@ -413,7 +427,8 @@ export default function GamePage() {
           p2_contract?.id?.id,
           p2_contract?.life,
           p2_deck,
-          p2_hand
+          p2_hand,
+          p2_contract?.played_card_this_turn
         );
         if (!player_1 || !player_2) {
           setPlayer_1(player1);
@@ -448,16 +463,15 @@ export default function GamePage() {
             : !is_player_1_turn && !is_player_1 && player_2
             ? get_player_backend(player_2)
             : undefined;
-        // let draw_success = false;
-        let success;
         if (player && !has_drawn) {
           setHas_drawn(true);
-          success = await draw(
+          let success = await draw(
             wallet,
             router.query.game_id as string,
             is_player_1,
             player
           );
+          success ? console.log("Draw successful") : console.log("Draw failed");
         }
       } catch (error) {
         console.log(error);

@@ -87,14 +87,14 @@ const State: React.FC<StateProps> = ({
                           selected_cards_to_defend
                         )
                       }
-                      disabled={
+                      isDisabled={
                         (is_player_1_turn && is_player_1) ||
                         (!is_player_1_turn && !is_player_1)
                           ? false
                           : true
                       }
                     >
-                      Attack
+                      {is_player_1_turn ? "P1 Attack" : "P2 Attack"}
                     </Button>
                   ) : (
                     <h1>Waiting for game...</h1>
