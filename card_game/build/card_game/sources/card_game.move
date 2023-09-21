@@ -15,7 +15,7 @@ module card_game::card_game {
     use std::debug;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 20;
+    const STARTING_HEALTH: u64 = 5;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
