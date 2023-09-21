@@ -29,6 +29,12 @@ import {
 } from "../../../calls/move_calls";
 import State from "../../../components/State";
 import { useLocalStorage } from "usehooks-ts";
+import Player from "../../../components/Display/Player";
+import Deck from "../../../components/Display/Hand";
+import Board from "../../../components/Display/Board";
+import Divider from "../../../components/Display/Divider";
+import Hand from "../../../components/Display/Hand";
+import Area from "../../../components/Display/Area";
 
 //TODO: Add logic for when a player wins
 //TODO: Fix Attack logic
@@ -430,6 +436,7 @@ export default function GamePage() {
           p2_hand,
           p2_contract?.played_card_this_turn
         );
+
         if (!player_1 || !player_2) {
           setPlayer_1(player1);
           setPlayer_2(player2);
@@ -491,479 +498,111 @@ export default function GamePage() {
     <>
       {is_player_1 ? (
         <>
-          {/* Logic for player 1*/}
-          <div
-            className={
-              "min-h-screen flex flex-col items-center laptop:bg-[url('/images/map.png')]"
-            }
-          >
-            {/* Main Div */}
-            <div className="grid grid-rows-7 min-h-screen w-4/5 gap-2">
-              {/* FIRST DIV */}
-              <div className="grid grid-cols-8 w-full min-h-ful gap-2 p-2 ">
-                <div className="w-full h-full p-2  ">
-                  {player_2 && player_2.hand && player_2.hand.length > 0 ? (
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="card"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 ">
-                  <Tooltip
-                    placement="bottom"
-                    label={`Health: ${player_2?.life || "Loading..."}`}
-                  >
-                    <Image src="/images/player2.png" alt="player-2" />
-                  </Tooltip>
-                </div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 ">
-                  {player_2 &&
-                  player_2.graveyard &&
-                  player_2.graveyard.length > 0 ? (
-                    <Image
-                      src="/images/cards/front.png"
-                      alt="enemy-deck"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-8 w-full min-h-full gap-2 p-2 ">
-                <div className="w-full h-full p-2 "></div>
-                {player_2?.hand?.map((card: Card, index: number) => (
-                  <div key={index} className="w-full h-full p-2 ">
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="card"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  </div>
-                ))}
-                <div className="w-full h-full p-2 "></div>
-              </div>
-
-              {/* Second Div */}
-              <div className="h-full  grid grid-rows-7 items-center row-span-3 gap-2 ">
-                <div className="grid row-span-2 grid-cols-8 w-full min-h-full gap-2 p-2">
-                  {player_2?.board?.map((card: Card, index: number) => (
-                    <div key={index} className="w-full h-full p-2">
-                      <Tooltip
-                        placement="bottom"
-                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
-                      >
-                        <Button
-                          onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                          className="w-full h-full p-0 hover:border-red-500"
-                          style={{
-                            border: isWaitingForAttack
-                              ? "2px solid red"
-                              : "none",
-                            background: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <Image src="/images/cards/front.png" alt="shark" />
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
-                  <div className="flex justify-center ">
-                    <Button
-                      colorScheme="yellow"
-                      isDisabled={is_player_1_turn ? false : true}
-                      onClick={() =>
-                        end_turn(wallet, router.query.game_id as string)
-                      }
-                    >
-                      End Turn
-                    </Button>
-                  </div>
-                  <div className="flex justify-center">
-                    <State
-                      isWaitingForDraw={isWaitingForDraw}
-                      isWaitingForDiscard={isWaitingForDiscard}
-                      isWaitingForAttack={isWaitingForAttack}
-                      isWaitingForPlay={isWaitingForPlay}
-                      wallet={wallet}
-                      router={router}
-                      selected_cards_to_attack={selected_cards_to_attack}
-                      selected_cards_to_defend={selected_cards_to_defend}
-                      is_player_1={is_player_1}
-                      is_player_1_turn={is_player_1_turn}
-                    />
-                  </div>
-                  <div className="flex justify-center ">
-                    <Button
-                      colorScheme="red"
-                      onClick={() => {
-                        surrender(wallet, router.query.game_id as string);
-                        router.push("/");
-                      }}
-                    >
-                      Surrender
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-8 w-full min-h-full row-span-2 p-2 gap-2 ">
-                  <div className="w-full h-full p-2 "></div>
-                  {player_1?.board?.map((card: Card, index: number) => {
-                    return (
-                      <div key={index} className="w-full h-full p-2">
-                        <Tooltip
-                          placement="bottom"
-                          label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
-                        >
-                          <Button
-                            onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                            className="w-full h-full p-0 hover:border-red-500"
-                            style={{
-                              border: isWaitingForAttack
-                                ? "2px solid red"
-                                : "none",
-                              background: "none",
-                              cursor: "pointer",
-                            }}
-                          >
-                            <Image src="/images/cards/front.png" alt="shark" />
-                          </Button>
-                        </Tooltip>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="grid grid-cols-8 w-full min-h-full p-2 gap-2 ">
-                <div></div>
-                {player_1?.hand?.map((card: Card, index: number) => (
-                  <div key={index} className="w-full h-full p-2 bg-white">
-                    <Tooltip
-                      placement="bottom"
-                      label={`${card.name} \n
-                        ${card.description} \n
-                        A:${card.attack} D:${card.defense}`}
-                    >
-                      <Button
-                        onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                        className="w-full h-full"
-                        style={{
-                          height: "80px",
-                          width: "80px",
-                          border: "none",
-                          background: "none",
-                          cursor: "pointer",
-                        }}
-                        disabled={isWaitingForAttack}
-                      >
-                        <Box
-                          _hover={{ backgroundColor: "#ebedf0" }} // Hover effect for the Box
-                        >
-                          <Image src="/images/cards/front.png" alt="shark" />
-                        </Box>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                ))}
-              </div>
-              <div className="grid row-span-2 grid-cols-8 w-full min-h-full gap-2 p-2">
-                <div className="w-full h-full p-2  ">
-                  {player_1 &&
-                  player_1.graveyard &&
-                  player_1.graveyard.length > 0 ? (
-                    <Image
-                      src="/images/cards/front.png"
-                      alt="card"
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                        marginTop: "50px",
-                      }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-                <div className="w-full h-full p-2  "></div>
-                <div className="w-full h-full p-2  "></div>
-                <div className="w-full h-full p-2 mt-20 mb-5">
-                  <Tooltip
-                    placement="top"
-                    label={`Health: ${player_1?.life || "Loading..."}`}
-                  >
-                    <Image src="/images/player1.png" alt="player-1" />
-                  </Tooltip>
-                </div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2">
-                  {player_1 && player_1.deck && player_1.deck.length > 0 ? (
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="card"
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                        marginTop: "50px",
-                      }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <main className="min-h-screen bg-red-200">
+            <section className="w-full bg-blue-400 pt-8 pb-12 px-4">
+              <Area player_num={2} player_obj={player_2} />
+              <Hand
+                player_obj={player_2}
+                isWaitingForAttack={isWaitingForAttack}
+                show_cards={false}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <br />
+            <section className="flex flex-row justify-center items-center w-full bg-blue-400 p-16">
+              <Board
+                player_obj={player_2}
+                isWaitingForAttack={isWaitingForAttack}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <section className=" bg-orange-400 w-full mt-2 mb-2 p-8">
+              <Divider
+                isWaitingForAttack={isWaitingForAttack}
+                isWaitingForDraw={isWaitingForDraw}
+                isWaitingForPlay={isWaitingForPlay}
+                isWaitingForDiscard={isWaitingForDiscard}
+                wallet={wallet}
+                router={router}
+                selected_cards_to_attack={selected_cards_to_attack}
+                selected_cards_to_defend={selected_cards_to_defend}
+                is_player_1={is_player_1}
+                is_player_1_turn={is_player_1_turn}
+              />
+            </section>
+            <section className="flex flex-row justify-center items-center w-full bg-green-400 p-16">
+              <Board
+                player_obj={player_1}
+                isWaitingForAttack={isWaitingForAttack}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <br />
+            <section className="w-full bg-green-400 p-12">
+              <Hand
+                player_obj={player_1}
+                isWaitingForAttack={isWaitingForAttack}
+                show_cards={true}
+                handleCardClick={handleCardClick}
+              />
+              <Area player_num={1} player_obj={player_1} />
+            </section>
+          </main>
         </>
       ) : (
         <>
-          {/* Logic for player 2's turn */}
-          <div
-            className={
-              "min-h-screen flex flex-col items-center laptop:bg-[url('/images/map.png')]"
-            }
-          >
-            {/* Main Div */}
-            <div className="grid grid-rows-7 min-h-screen w-4/5 gap-2">
-              {/* FIRST DIV */}
-              <div className="grid grid-cols-8 w-full min-h-ful gap-2 p-2 ">
-                <div className="w-full h-full p-2  ">
-                  {player_1 && player_1.deck && player_1.deck.length > 0 ? (
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="enemy-deck"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2">
-                  <Tooltip
-                    placement="bottom"
-                    label={`Health: ${player_1?.life || "Loading..."}`}
-                  >
-                    <Image src="/images/player1.png" alt="player-1" />
-                  </Tooltip>
-                </div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2">
-                  {player_1 &&
-                  player_1.graveyard &&
-                  player_1.graveyard.length > 0 ? (
-                    <Image
-                      src="/images/cards/front.png"
-                      alt="enemy-deck"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-8 w-full min-h-fullgap-2 p-2 ">
-                <div className="w-full h-full p-2 "></div>
-                {player_1?.hand?.map((card: Card, index: number) => (
-                  <div key={index} className="w-full h-full p-2">
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="card"
-                      style={{ width: "100px", height: "auto" }}
-                    />
-                  </div>
-                ))}
-                <div className="w-full h-full p-2"></div>
-              </div>
-              {/* Second Div */}
-              <div className="h-full  grid grid-rows-7 items-center row-span-3 gap-2 ">
-                <div className="grid row-span-2 grid-cols-8 w-full min-h-full gap-2 p-2">
-                  {player_1?.board?.map((card: Card, index: number) => (
-                    <div key={index} className="w-full h-full p-2">
-                      <Tooltip
-                        placement="bottom"
-                        label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
-                      >
-                        <Button
-                          onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                          className="w-full h-full p-0 hover:border-red-500"
-                          style={{
-                            border: isWaitingForAttack
-                              ? "2px solid red"
-                              : "none",
-                            background: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <Image src="/images/cards/front.png" alt="shark" />
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 min-h-full bg-orange-400 w-full items-center">
-                  <div className="flex justify-center ">
-                    <Button
-                      colorScheme="yellow"
-                      isDisabled={is_player_1_turn ? true : false}
-                      onClick={() =>
-                        end_turn(wallet, router.query.game_id as string)
-                      }
-                    >
-                      End Turn
-                    </Button>
-                  </div>
-                  <div className="flex justify-center">
-                    <State
-                      isWaitingForDraw={isWaitingForDraw}
-                      isWaitingForDiscard={isWaitingForDiscard}
-                      isWaitingForAttack={isWaitingForAttack}
-                      isWaitingForPlay={isWaitingForPlay}
-                      wallet={wallet}
-                      router={router}
-                      selected_cards_to_attack={selected_cards_to_attack}
-                      selected_cards_to_defend={selected_cards_to_defend}
-                      is_player_1={is_player_1}
-                      is_player_1_turn={is_player_1_turn}
-                    />
-                  </div>
-                  <div className="flex justify-center ">
-                    <Button
-                      colorScheme="red"
-                      onClick={() => {
-                        surrender(wallet, router.query.game_id as string);
-                        router.push("/");
-                      }}
-                    >
-                      Surrender
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-8 w-full min-h-full first-line:row-span-2 p-2 gap-2 ">
-                  {player_2?.board?.map((card: Card, index: number) => {
-                    return (
-                      <div key={index} className="w-full h-full p-2 ">
-                        <Tooltip
-                          placement="bottom"
-                          label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
-                        >
-                          <Button
-                            onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                            className="w-full h-full p-0 hover:border-red-500"
-                            style={{
-                              border: isWaitingForAttack
-                                ? "2px solid red"
-                                : "none",
-                              background: "none",
-                              cursor: "pointer",
-                            }}
-                          >
-                            <Image src="/images/cards/front.png" alt="shark" />
-                          </Button>
-                        </Tooltip>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="grid grid-cols-8 w-full min-h-fullp-2 gap-2 ">
-                {player_2?.hand?.map((card: Card, index: number) => (
-                  <div key={index} className="w-full h-full p-2 bg-white">
-                    <Tooltip
-                      placement="bottom"
-                      label={`Card Name: ${card.name}\nCard Description: ${card.description}\nAttack: ${card.attack}\nDefense: ${card.defense}`}
-                    >
-                      <Button
-                        onClick={() => handleCardClick(card, index)} // Replace with your onClick handler function
-                        className="w-full h-full p-0"
-                        style={{
-                          height: "80px",
-                          width: "80px",
-                          border: "none",
-                          background: "none",
-                          cursor: "pointer",
-                        }}
-                        disabled={isWaitingForAttack}
-                      >
-                        <Box
-                          _hover={{ backgroundColor: "#ebedf0" }} // Hover effect for the Box
-                        >
-                          <Image src="/images/cards/front.png" alt="shark" />
-                        </Box>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                ))}
-              </div>
-              <div className="grid row-span-2 grid-cols-8 w-full min-h-full gap-2 p-2">
-                <div className="w-full h-full p-2  ">
-                  {player_2 &&
-                  player_2.graveyard &&
-                  player_2.graveyard.length > 0 ? (
-                    <Image
-                      src="/images/cards/front.png"
-                      alt="card"
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                        marginTop: "50px",
-                      }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-                <div className="w-full h-full p-2  "></div>
-                <div className="w-full h-full p-2  "></div>
-                <div className="w-full h-full p-2 mt-20 mb-5">
-                  <Tooltip
-                    placement="top"
-                    label={`Health: ${player_2?.life || "Loading..."}`}
-                  >
-                    <Image src="/images/player2.png" alt="player-2" />
-                  </Tooltip>
-                </div>
-                <div className="w-full h-full p-2 "></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2"></div>
-                <div className="w-full h-full p-2">
-                  {player_2 && player_2.deck && player_2.deck.length > 0 ? (
-                    <Image
-                      src="/images/cards/back.jpeg"
-                      alt="card"
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                        marginTop: "50px",
-                      }}
-                    />
-                  ) : (
-                    <Image></Image>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <main className="min-h-screen bg-red-200">
+            <section className="w-full bg-blue-400 pt-8 pb-12 px-4">
+              <Area player_num={1} player_obj={player_1} />
+              <Hand
+                player_obj={player_1}
+                isWaitingForAttack={isWaitingForAttack}
+                show_cards={false}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <br />
+            <section className="flex flex-row justify-center items-center w-full bg-blue-400 p-16">
+              <Board
+                player_obj={player_1}
+                isWaitingForAttack={isWaitingForAttack}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <section className=" bg-orange-400 w-full mt-2 mb-2 p-8">
+              <Divider
+                isWaitingForAttack={isWaitingForAttack}
+                isWaitingForDraw={isWaitingForDraw}
+                isWaitingForPlay={isWaitingForPlay}
+                isWaitingForDiscard={isWaitingForDiscard}
+                wallet={wallet}
+                router={router}
+                selected_cards_to_attack={selected_cards_to_attack}
+                selected_cards_to_defend={selected_cards_to_defend}
+                is_player_1={is_player_1}
+                is_player_1_turn={is_player_1_turn}
+              />
+            </section>
+            <section className="flex flex-row justify-center items-center w-full bg-green-400 p-16">
+              <Board
+                player_obj={player_2}
+                isWaitingForAttack={isWaitingForAttack}
+                handleCardClick={handleCardClick}
+              />
+            </section>
+            <br />
+            <section className="w-full bg-green-400 p-12">
+              <Hand
+                player_obj={player_2}
+                isWaitingForAttack={isWaitingForAttack}
+                show_cards={true}
+                handleCardClick={handleCardClick}
+              />
+              <Area player_num={2} player_obj={player_2} />
+            </section>
+          </main>
         </>
       )}
-      ;
     </>
   );
 }

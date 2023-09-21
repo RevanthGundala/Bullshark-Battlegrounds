@@ -415,7 +415,7 @@ module card_game::card_game {
     /// Private Functions ///
     /////////////////////////
     
-    fun end_game(game: Game, winner: address) {
+    public fun end_game(game: Game, winner: address) {
         event::emit(GameOver{
             id: object::uid_to_inner(&game.id),
             winner: winner
