@@ -1,4 +1,5 @@
 import { Chain, TransactionBlock, Wallet } from "ethos-connect";
+import { getEvents } from "@mysten/sui.js";
 import { MODULE_ADDRESS, MAX_HAND_SIZE, TOTAL_DECK_SIZE } from "../constants";
 import { get_object_ids, listen_for_events } from "./api_calls";
 import { NextRouter } from "next/router";
@@ -270,12 +271,7 @@ export const attack = async (
     console.log("Attack Response: Success\n", response);
 
     let game_over = false;
-    // await listen_for_events();
-    /*
-      if(event.winner == wallet.address){
-        game_over = true;
-      }
-      */
+    await check_game_over(wallet, game_id, response?.digest);
     return game_over;
   } catch (error) {
     console.log(error);
@@ -336,6 +332,22 @@ export const surrender = async (
       */
     //   setIsLoading(false);
     //   router.push("/");
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const check_game_over = async (
+  wallet: Wallet,
+  game_id: string,
+  digest: string | undefined
+) => {
+  if (!wallet || !digest) return;
+  try {
+    let response = getEvents({
+      digest: digest,
+    });
+    console.log("Event response: " + response);
   } catch (error) {
     console.log(error);
   }

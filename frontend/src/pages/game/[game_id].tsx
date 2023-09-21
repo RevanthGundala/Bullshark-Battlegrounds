@@ -499,7 +499,7 @@ export default function GamePage() {
     <>
       {is_player_1 ? (
         <>
-          <main className="min-h-screen bg-red-200">
+          <main className="min-h-screen bg-[url('/images/map.png')] bg-cover bg-center">
             <Half
               player_num={2}
               player_obj={player_2}
@@ -518,7 +518,7 @@ export default function GamePage() {
                 router={router}
                 selected_cards_to_attack={selected_cards_to_attack}
                 selected_cards_to_defend={selected_cards_to_defend}
-                is_player_1={is_player_1}
+                is_player_1={true}
                 is_player_1_turn={is_player_1_turn}
               />
             </section>
@@ -534,7 +534,7 @@ export default function GamePage() {
         </>
       ) : (
         <>
-          <main className="min-h-screen bg-red-200">
+          <main className="min-h-screen bg-[url('/images/map.png')] bg-cover bg-center">
             <Half
               player_num={1}
               player_obj={player_1}
@@ -543,7 +543,7 @@ export default function GamePage() {
               opponent_perspective={true}
               handleCardClick={handleCardClick}
             />
-            <section className=" bg-orange-400 w-full p-8">
+            <section className="bg-orange-400 w-full p-2">
               <Divider
                 isWaitingForAttack={isWaitingForAttack}
                 isWaitingForDraw={isWaitingForDraw}
@@ -553,7 +553,7 @@ export default function GamePage() {
                 router={router}
                 selected_cards_to_attack={selected_cards_to_attack}
                 selected_cards_to_defend={selected_cards_to_defend}
-                is_player_1={is_player_1}
+                is_player_1={false}
                 is_player_1_turn={is_player_1_turn}
               />
             </section>

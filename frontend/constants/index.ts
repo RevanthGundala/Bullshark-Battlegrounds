@@ -1,5 +1,5 @@
 export const MODULE_ADDRESS =
-  "0xdfd330fe6e36b84068d3d7456b37966acea7b04bd8ea154bfc3d55c9de9563c9";
+  "0xc6f837cc7272519818f169d308a9db872ebd4f7e83eadddc570f846f3aa048d8";
 export const MAX_HAND_SIZE = 6;
 export const STARTING_DECK_SIZE = 4;
 export const TOTAL_DECK_SIZE = 10;

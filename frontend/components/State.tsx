@@ -56,13 +56,13 @@ const State: React.FC<StateProps> = ({
   return (
     <div>
       {isWaitingForDraw ? (
-        <h1>
+        <h1 className="text-center">
           {is_player_1_turn ? "Waiting for p1 draw" : "Waiting for p2 draw"}
         </h1>
       ) : (
         <>
           {isWaitingForDiscard ? (
-            <h1>
+            <h1 className="text-center">
               {is_player_1_turn
                 ? "Waiting for p1 discard"
                 : "Waiting for p2 discard"}

@@ -15,7 +15,7 @@ module card_game::card_game {
     use std::debug;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 1;
+    const STARTING_HEALTH: u64 = 5;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
@@ -332,22 +332,6 @@ module card_game::card_game {
             }   
             // attack the player
             else{
-                // defending_player.life = defending_player.life - attacking_character.type.attack;
-                // // Game is over check
-                // if(defending_player.life <= 0){
-                //     game_over = true;
-                //     break
-                // };
-                
-                //  if(defending_player.life - attacking_character.type.attack <= 0){
-                //     defending_player.life = 0;
-                //     game_over = true;
-                //     break
-                // }
-                // else{
-                //     defending_player.life = defending_player.life - attacking_character.type.attack;
-                // };
-
                 if(defending_player.life > attacking_character.type.attack){
                     defending_player.life = defending_player.life - attacking_character.type.attack;
                 }
@@ -356,7 +340,6 @@ module card_game::card_game {
                     game_over = true;
                     break
                 };
-                
             };
             i = i + 1;
         };
