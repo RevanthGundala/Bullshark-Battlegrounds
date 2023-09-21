@@ -35,6 +35,7 @@ import Board from "../../../components/Display/Board";
 import Divider from "../../../components/Display/Divider";
 import Hand from "../../../components/Display/Hand";
 import Area from "../../../components/Display/Area";
+import Half from "../../../components/Display/Half";
 
 //TODO: Add logic for when a player wins
 //TODO: Fix Attack logic
@@ -499,24 +500,15 @@ export default function GamePage() {
       {is_player_1 ? (
         <>
           <main className="min-h-screen bg-red-200">
-            <section className="w-full bg-blue-400 pt-8 pb-12 px-4">
-              <Area player_num={2} player_obj={player_2} />
-              <Hand
-                player_obj={player_2}
-                isWaitingForAttack={isWaitingForAttack}
-                show_cards={false}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <br />
-            <section className="flex flex-row justify-center items-center w-full bg-blue-400 p-16">
-              <Board
-                player_obj={player_2}
-                isWaitingForAttack={isWaitingForAttack}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <section className=" bg-orange-400 w-full mt-2 mb-2 p-8">
+            <Half
+              player_num={2}
+              player_obj={player_2}
+              show_cards={false}
+              isWaitingForAttack={isWaitingForAttack}
+              opponent_perspective={true}
+              handleCardClick={handleCardClick}
+            />
+            <section className=" bg-orange-400 w-full p-8">
               <Divider
                 isWaitingForAttack={isWaitingForAttack}
                 isWaitingForDraw={isWaitingForDraw}
@@ -530,46 +522,28 @@ export default function GamePage() {
                 is_player_1_turn={is_player_1_turn}
               />
             </section>
-            <section className="flex flex-row justify-center items-center w-full bg-green-400 p-16">
-              <Board
-                player_obj={player_1}
-                isWaitingForAttack={isWaitingForAttack}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <br />
-            <section className="w-full bg-green-400 p-12">
-              <Hand
-                player_obj={player_1}
-                isWaitingForAttack={isWaitingForAttack}
-                show_cards={true}
-                handleCardClick={handleCardClick}
-              />
-              <Area player_num={1} player_obj={player_1} />
-            </section>
+            <Half
+              player_num={1}
+              player_obj={player_1}
+              show_cards={true}
+              isWaitingForAttack={isWaitingForAttack}
+              opponent_perspective={false}
+              handleCardClick={handleCardClick}
+            />
           </main>
         </>
       ) : (
         <>
           <main className="min-h-screen bg-red-200">
-            <section className="w-full bg-blue-400 pt-8 pb-12 px-4">
-              <Area player_num={1} player_obj={player_1} />
-              <Hand
-                player_obj={player_1}
-                isWaitingForAttack={isWaitingForAttack}
-                show_cards={false}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <br />
-            <section className="flex flex-row justify-center items-center w-full bg-blue-400 p-16">
-              <Board
-                player_obj={player_1}
-                isWaitingForAttack={isWaitingForAttack}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <section className=" bg-orange-400 w-full mt-2 mb-2 p-8">
+            <Half
+              player_num={1}
+              player_obj={player_1}
+              show_cards={false}
+              isWaitingForAttack={isWaitingForAttack}
+              opponent_perspective={true}
+              handleCardClick={handleCardClick}
+            />
+            <section className=" bg-orange-400 w-full p-8">
               <Divider
                 isWaitingForAttack={isWaitingForAttack}
                 isWaitingForDraw={isWaitingForDraw}
@@ -583,23 +557,14 @@ export default function GamePage() {
                 is_player_1_turn={is_player_1_turn}
               />
             </section>
-            <section className="flex flex-row justify-center items-center w-full bg-green-400 p-16">
-              <Board
-                player_obj={player_2}
-                isWaitingForAttack={isWaitingForAttack}
-                handleCardClick={handleCardClick}
-              />
-            </section>
-            <br />
-            <section className="w-full bg-green-400 p-12">
-              <Hand
-                player_obj={player_2}
-                isWaitingForAttack={isWaitingForAttack}
-                show_cards={true}
-                handleCardClick={handleCardClick}
-              />
-              <Area player_num={2} player_obj={player_2} />
-            </section>
+            <Half
+              player_num={2}
+              player_obj={player_2}
+              show_cards={true}
+              isWaitingForAttack={isWaitingForAttack}
+              opponent_perspective={false}
+              handleCardClick={handleCardClick}
+            />
           </main>
         </>
       )}
