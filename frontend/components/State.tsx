@@ -27,17 +27,14 @@ async function attack_opponent(
   if (selected_cards_to_attack && selected_cards_to_defend) {
     directPlayerAttacks =
       selected_cards_to_attack?.length - selected_cards_to_defend?.length;
-    let game_over = await attack(
+    await attack(
       wallet,
       router.query.game_id as string,
       selected_cards_to_attack, // attacking character indices
       selected_cards_to_defend,
-      directPlayerAttacks
+      directPlayerAttacks,
+      router
     );
-    if (game_over) {
-      window.alert("Game over!");
-      router.push("/");
-    }
   }
 }
 

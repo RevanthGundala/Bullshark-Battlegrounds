@@ -250,7 +250,8 @@ export const attack = async (
   game_id: string,
   attacking_characters: number[], // card index
   defending_characters: number[],
-  direct_player_attacks: number
+  direct_player_attacks: number,
+  router: any
 ) => {
   if (!wallet) return;
   try {
@@ -270,9 +271,13 @@ export const attack = async (
     );
     console.log("Attack Response: Success\n", response);
 
-    let game_over = false;
-    await check_game_over(wallet, game_id, response?.digest);
-    return game_over;
+    let events = response?.events?.[0] as any;
+    if (events) {
+      events.parsedJson?.winner == wallet.address
+        ? window.alert("You won!")
+        : window.alert("You lost!");
+      router.push("/");
+    }
   } catch (error) {
     console.log(error);
   }
@@ -305,7 +310,8 @@ export const end_turn = async (wallet: Wallet | undefined, game_id: string) => {
 
 export const surrender = async (
   wallet: Wallet | undefined,
-  game_id: string
+  game_id: string,
+  router: any
 ) => {
   if (!wallet) return;
   try {
@@ -325,30 +331,13 @@ export const surrender = async (
       },
     });
     console.log("Transaction Response", response);
-    /*
-      if(event.winner == wallet.address){
-        window.alert("You won!");
-      }
-      */
-    //   setIsLoading(false);
-    //   router.push("/");
-    await check_game_over(wallet, game_id, response?.digest);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const check_game_over = async (
-  wallet: Wallet,
-  game_id: string,
-  digest: string | undefined
-) => {
-  if (!wallet || !digest) return;
-  try {
-    let response = getEvents({
-      digest: digest,
-    });
-    console.log("Event response: " + response);
+    let events = response.events?.[0] as any;
+    if (events) {
+      events.parsedJson?.winner == wallet.address
+        ? window.alert("You won!")
+        : window.alert("You lost!");
+      router.push("/");
+    }
   } catch (error) {
     console.log(error);
   }

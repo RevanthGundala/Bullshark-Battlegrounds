@@ -399,7 +399,7 @@ module card_game::card_game {
     /// Private Functions ///
     /////////////////////////
     
-    public fun end_game(game: Game, winner: address) {
+    fun end_game(game: Game, winner: address) {
         event::emit(GameOver{
             id: object::uid_to_inner(&game.id),
             winner: winner
@@ -511,7 +511,7 @@ module card_game::card_game {
             i = i + 1;
         };
         assert!(vector::length<Card>(&player_2_board) == 0, EInvalidVectorDeletion);
-        
+
         vector::destroy_empty(player_1_graveyard);
         vector::destroy_empty(player_2_graveyard);
         vector::destroy_empty(player_2_board);

@@ -55,7 +55,7 @@ export default function Divider({
       <Button
         colorScheme="red"
         onClick={() => {
-          surrender(wallet, router.query.game_id as string);
+          surrender(wallet, router.query.game_id as string, router);
         }}
       >
         Surrender
