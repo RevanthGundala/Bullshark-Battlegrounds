@@ -2,7 +2,11 @@
 
 A Trading Card Game built on Sui.
 
-# Contract Integration Tests
+# Running on local machine
+
+`git clone https://github.com/RevanthGundala/Bullshark-Battlegrounds.git`
+
+# Running integration tests
 
 1. `cd card_game`
 2. `sui move test`
