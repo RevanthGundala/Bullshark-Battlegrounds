@@ -436,8 +436,14 @@ module card_game::card_game {
             life: _,
             played_character_this_turn: _,
         } = player_2;
+
+        let p1_graveyard_size = vector::length<Card>(&player_1_graveyard);
+        let p2_graveyard_size = vector::length<Card>(&player_2_graveyard);
+        let p1_board_size = vector::length<Card>(&player_1_board);
+        let p2_board_size = vector::length<Card>(&player_2_board);
+
         let i = 0;
-        while(i < vector::length<Card>(&player_1_graveyard)){
+        while(i < p1_graveyard_size){
             let card = vector::pop_back<Card>(&mut player_1_graveyard);
             let Card{
                 id: card_id,
@@ -454,7 +460,7 @@ module card_game::card_game {
         };
         assert!(vector::length<Card>(&player_1_graveyard) == 0, EInvalidVectorDeletion);
         i = 0;
-        while(i < vector::length<Card>(&player_2_graveyard)){
+        while(i < p2_graveyard_size){
             let card = vector::pop_back<Card>(&mut player_2_graveyard);
             let Card{
                 id: card_id,
@@ -470,10 +476,9 @@ module card_game::card_game {
             i = i + 1;
         };
         assert!(vector::length<Card>(&player_2_graveyard) == 0, EInvalidVectorDeletion);
-        debug::print(&string::utf8(b"player_1_board length: "));
-        debug::print(&vector::length<Card>(&player_1_board));
         i = 0;
-        while(i < vector::length<Card>(&player_1_board)){
+        while(i < p1_board_size){
+            debug::print(&i);
             let card = vector::pop_back<Card>(&mut player_1_board);
             let Card{
                 id: card_id,
@@ -490,7 +495,7 @@ module card_game::card_game {
         };
         assert!(vector::length<Card>(&player_1_board) == 0, EInvalidVectorDeletion);
         i = 0;
-        while(i < vector::length<Card>(&player_2_board)){
+        while(i < p2_board_size){
             let card = vector::pop_back<Card>(&mut player_2_board);
             let Card{
                 id: card_id,
@@ -506,12 +511,11 @@ module card_game::card_game {
             i = i + 1;
         };
         assert!(vector::length<Card>(&player_2_board) == 0, EInvalidVectorDeletion);
+        
         vector::destroy_empty(player_1_graveyard);
         vector::destroy_empty(player_2_graveyard);
         vector::destroy_empty(player_2_board);
         vector::destroy_empty(player_1_board);
-        
-        
         object::delete(player_1_id);
         object::delete(player_2_id);
         object::delete(game_id);
