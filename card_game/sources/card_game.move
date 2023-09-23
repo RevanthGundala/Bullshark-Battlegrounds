@@ -15,7 +15,7 @@ module card_game::card_game {
     use std::debug;
     
     // CONSTANTS
-    const STARTING_HEALTH: u64 = 5;
+    const STARTING_HEALTH: u64 = 1;
     const STARTING_DECK_SIZE: u64 = 4;
     const STARTING_HAND_SIZE: u64 = 6;
 
@@ -472,7 +472,7 @@ module card_game::card_game {
         };
        
         i = 0;
-        debug::print(&vector::length<Card>(&player_1_board));
+        debug::print(&player_1_board);
         while(i < vector::length<Card>(&player_1_board)){
             let card = vector::pop_back<Card>(&mut player_1_board);
             let Card{
@@ -508,52 +508,12 @@ module card_game::card_game {
 
         vector::destroy_empty(player_1_graveyard);
         vector::destroy_empty(player_2_graveyard);
-        vector::destroy_empty(player_1_board);
         vector::destroy_empty(player_2_board);
+        vector::destroy_empty(player_1_board);
+        
         
         object::delete(player_1_id);
         object::delete(player_2_id);
         object::delete(game_id);
     } 
-
-    // #[test]
-    // fun test_workflow() {
-    //     use sui::test_scenario;
-
-    //     // create test addresses representing users
-    //     let admin = @0xBABE;
-    //     let player_1 = @0xCAFE;
-    //     let player_2 = @0xFACE;
-
-    //     // first transaction to emulate module initialization
-    //     let scenario_val = test_scenario::begin(admin);
-    //     let scenario = &mut scenario_val;
-    //     // second transaction executed by admin to create the sword
-    //     {
-    //         // create the sword and transfer it to the initial owner
-    //         challenge_person(player_2, test_scenario::ctx(scenario));
-    //     };
-    //     // third transaction executed by the initial sword owner
-    //     test_scenario::next_tx(scenario, player_2);
-    //     {
-    //         // extract the sword owned by the initial owner
-    //         let challenge = test_scenario::take_from_sender<Challenge>(scenario);
-    //         // transfer the sword to the final owner
-    //         accept_challenge(challenge, test_scenario::ctx(scenario));
-    //     };
-    //     // fourth transaction executed by the final sword owner
-    //     test_scenario::next_tx(scenario, player_1);
-    //     {
-    //         draw(
-    //             test_scenario::take_from_sender<Game>(scenario),
-    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
-    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
-    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
-    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
-    //             vector::new_unsafe_from_bytes(vector::new_unsafe_from_bytes(&[0u8; 32])),
-    //             test_scenario::ctx(scenario)
-    //         );
-    //     };
-    //     test_scenario::end(scenario_val);
-    // }
 }

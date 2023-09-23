@@ -332,6 +332,7 @@ export const surrender = async (
       */
     //   setIsLoading(false);
     //   router.push("/");
+    await check_game_over(wallet, game_id, response?.digest);
   } catch (error) {
     console.log(error);
   }
