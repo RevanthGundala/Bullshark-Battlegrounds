@@ -2,7 +2,7 @@
 // Transfers game between players on each turn
 // Player's turn is determined by who owns the object
 
-#[allow(unused_variable)]
+#[allow(unused_variable, unused_use)]
 module card_game::card_game {
     use sui::object::{Self, UID, ID};
     use sui::transfer;
@@ -29,6 +29,7 @@ module card_game::card_game {
     const ETooManyDefendingCharacters: u64 = 7;
     const EInvalid_Deck_Size: u64 = 8;
     const EInvalid_State: u64 = 15;
+    const EInvalidVectorDeletion: u64 = 16;
 
     // STATES
     const IS_WAITING_FOR_DRAW: u64 = 10;
@@ -435,7 +436,6 @@ module card_game::card_game {
             life: _,
             played_character_this_turn: _,
         } = player_2;
-
         let i = 0;
         while(i < vector::length<Card>(&player_1_graveyard)){
             let card = vector::pop_back<Card>(&mut player_1_graveyard);
@@ -452,8 +452,7 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-
-        
+        assert!(vector::length<Card>(&player_1_graveyard) == 0, EInvalidVectorDeletion);
         i = 0;
         while(i < vector::length<Card>(&player_2_graveyard)){
             let card = vector::pop_back<Card>(&mut player_2_graveyard);
@@ -470,9 +469,10 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-       
+        assert!(vector::length<Card>(&player_2_graveyard) == 0, EInvalidVectorDeletion);
+        debug::print(&string::utf8(b"player_1_board length: "));
+        debug::print(&vector::length<Card>(&player_1_board));
         i = 0;
-        debug::print(&player_1_board);
         while(i < vector::length<Card>(&player_1_board)){
             let card = vector::pop_back<Card>(&mut player_1_board);
             let Card{
@@ -488,7 +488,7 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-        
+        assert!(vector::length<Card>(&player_1_board) == 0, EInvalidVectorDeletion);
         i = 0;
         while(i < vector::length<Card>(&player_2_board)){
             let card = vector::pop_back<Card>(&mut player_2_board);
@@ -505,7 +505,7 @@ module card_game::card_game {
             object::delete(card_id);
             i = i + 1;
         };
-
+        assert!(vector::length<Card>(&player_2_board) == 0, EInvalidVectorDeletion);
         vector::destroy_empty(player_1_graveyard);
         vector::destroy_empty(player_2_graveyard);
         vector::destroy_empty(player_2_board);
