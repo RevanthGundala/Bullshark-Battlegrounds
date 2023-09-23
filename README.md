@@ -1,3 +1,17 @@
-# zk_tcg_sui
+# Bullshark Battlegrounds
 
-Trading Card Game built on Sui that utilizes ZKP
+A Trading Card Game built on Sui.
+
+# Backend
+
+`npm run dev`
+
+# Frontend
+
+`npm run dev`
+
+# Contract currently deployed to Devnet
+
+```
+
+```
