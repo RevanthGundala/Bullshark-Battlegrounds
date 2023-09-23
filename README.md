@@ -2,16 +2,23 @@
 
 A Trading Card Game built on Sui.
 
+# Contract Integration Tests
+
+1. `cd card_game`
+2. `sui move test`
+
 # Backend
 
-`npm run dev`
+1. `cd backend`
+2. `npm run dev`
 
 # Frontend
 
-`npm run dev`
+1. `cd frontend`
+2. `npm run dev`
 
 # Contract currently deployed to Devnet
 
 ```
-
+https://suiexplorer.com/object/0xa182a6d28bb3fdd5893d5d84792d0c07f7cb0448ce9c2276d65b1fed0be3d8df?module=card_game&network=devnet
 ```
