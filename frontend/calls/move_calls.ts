@@ -256,7 +256,15 @@ export const attack = async (
   if (!wallet) return;
   try {
     let transactionBlock = new TransactionBlock();
-    console.log("attacking characters in move call ; ", attacking_characters);
+    console.log(
+      "attacking characters in move call ; ",
+      attacking_characters.length
+    );
+    console.log(
+      "defending characters in move call ; ",
+      defending_characters.length
+    );
+    console.log("direct player attacks in move call ; ", direct_player_attacks);
     let args = [
       transactionBlock.object(game_id),
       transactionBlock.pure(attacking_characters),
@@ -271,9 +279,11 @@ export const attack = async (
     );
     console.log("Attack Response: Success\n", response);
 
-    let events = response?.events?.[0] as any;
-    if (events) {
-      events.parsedJson?.winner == wallet.address
+    let events: any = response?.events?.filter(
+      (event) => event.type === `${MODULE_ADDRESS}::card_game::GameOver`
+    );
+    if (events.length > 0) {
+      events.parsedJson?.winner === wallet.address
         ? window.alert("You won!")
         : window.alert("You lost!");
       router.push("/");

@@ -44,7 +44,7 @@ export default function Navbar() {
             </div>
           ) : (
             // status is EthosConnectStatus.Connected
-            <button onClick={wallet?.disconnect}>{wallet?.address}</button>
+            <button onClick={wallet?.disconnect}>Sign out</button>
           )}
         </Box>
       </Flex>

@@ -22,7 +22,6 @@ async function attack_opponent(
   selected_cards_to_attack: number[] | null,
   selected_cards_to_defend: number[] | null
 ) {
-  console.log("State.tsx: attacking_cards: ", selected_cards_to_attack?.length);
   let directPlayerAttacks = 0;
   if (selected_cards_to_attack && selected_cards_to_defend) {
     directPlayerAttacks =

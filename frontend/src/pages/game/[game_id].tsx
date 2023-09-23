@@ -121,7 +121,8 @@ export default function GamePage() {
       setSelected_cards_to_defend([]);
       setHas_drawn(false);
     } else {
-      console.log("match_game_state: game state is invalid");
+      window.alert("Game is over"); //TODO: Render result based on win/loss for opponent
+      router.push("/");
     }
   }
 

@@ -183,8 +183,6 @@ export default function Challenges() {
     if (games !== undefined && games.length > 0) {
       console.log("Loading game...");
       return <LoadingGame game_id={games?.[0].objectId} isModalOpen={true} />;
-    } else {
-      return <div>No games found</div>;
     }
   }
 

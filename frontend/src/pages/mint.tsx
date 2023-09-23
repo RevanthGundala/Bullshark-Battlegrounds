@@ -15,22 +15,24 @@ export default function Mint() {
   return (
     <>
       <Navbar />
-      <Box textAlign="center">
-        <Text fontSize="5xl" fontWeight="bold" mt={4}>
-          Let's get you some cards to play with!
-        </Text>
-        <Button
-          colorScheme="blue"
-          isLoading={isLoading}
-          onClick={async () => {
-            setIsLoading(true);
-            await get_new_character(wallet);
-            setIsLoading(false);
-          }}
-        >
-          Generate cards
-        </Button>
-      </Box>
+      <div className="min-h-screen h-screen bg-[url('/images/map.png')] bg-cover bg-center">
+        <Box textAlign="center">
+          <Text fontSize="5xl" fontWeight="bold">
+            Let's get you some cards to play with!
+          </Text>
+          <Button
+            colorScheme="blue"
+            isLoading={isLoading}
+            onClick={async () => {
+              setIsLoading(true);
+              await get_new_character(wallet);
+              setIsLoading(false);
+            }}
+          >
+            Generate cards
+          </Button>
+        </Box>
+      </div>
     </>
   );
 }
