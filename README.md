@@ -1,6 +1,6 @@
 # Bullshark Battlegrounds
 
-A Trading Card Game built on Sui.
+A Trading Card Game built with Move.
 
 # Running on local machine
 
