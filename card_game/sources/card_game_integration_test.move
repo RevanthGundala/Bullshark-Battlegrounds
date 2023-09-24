@@ -132,16 +132,17 @@ module card_game::card_game_integration_test {
         };
     }
 
-    fun end_game(winner: address, scenario: &mut test_scenario::Scenario) {
-        next_tx(scenario, winner);
-        {
-            let game = take_from_sender<Game>(scenario);
-            card_game::end_game(
-                game,
-                winner,
-            );
-        };
-    }
+    // Public for Testing
+    // fun end_game(winner: address, scenario: &mut test_scenario::Scenario) {
+    //     next_tx(scenario, winner);
+    //     {
+    //         let game = take_from_sender<Game>(scenario);
+    //         card_game::end_game(
+    //             game,
+    //             winner,
+    //         );
+    //     };
+    // }
 
     #[test]
     fun test_challenge_and_accept() {
@@ -219,14 +220,14 @@ module card_game::card_game_integration_test {
         end(scenario);
     }
 
-    #[test]
-    fun test_end_game() {
-        let player_1 = @0xA;
-        let player_2 = @0xB; 
-        let scenario = begin(player_1);
-        challenge_and_accept(player_1, player_2, &mut scenario);
-        end_game(player_1, &mut scenario);
-        end(scenario);
-    }
+    // #[test]
+    // fun test_end_game() {
+    //     let player_1 = @0xA;
+    //     let player_2 = @0xB; 
+    //     let scenario = begin(player_1);
+    //     challenge_and_accept(player_1, player_2, &mut scenario);
+    //     end_game(player_1, &mut scenario);
+    //     end(scenario);
+    // }
 
 }

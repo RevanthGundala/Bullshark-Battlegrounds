@@ -1,6 +1,4 @@
 .env
 
-./*.log
-
-card_game/*.log
-card_game/build
+*.log
+build/
