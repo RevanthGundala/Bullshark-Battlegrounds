@@ -1,3 +1,6 @@
 .env
 
-backend/node_modules
+./*.log
+
+card_game/*.log
+card_game/build
