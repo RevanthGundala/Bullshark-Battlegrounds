@@ -1,5 +1,0 @@
-2023-09-16T03:31:40.554874Z  WARN sui_sdk::wallet_context: Client/Server api version mismatch, client api version : 1.8.0, server api version : 1.10.0
-2023-09-16T03:31:52.230913Z  INFO sui::client_commands: 0xfadfbb1673c3880e12b44982ac394fc12ae27cce70d68b820193fa3205c4354f
-2023-09-16T03:33:39.136191Z  INFO sui::client_commands: 0xfadfbb1673c3880e12b44982ac394fc12ae27cce70d68b820193fa3205c4354f
-2023-09-16T03:33:43.098398Z  WARN sui_sdk::wallet_context: Client/Server api version mismatch, client api version : 1.8.0, server api version : 1.10.0
-2023-09-16T03:34:49.922989Z  WARN sui_sdk::wallet_context: Client/Server api version mismatch, client api version : 1.8.0, server api version : 1.10.0
