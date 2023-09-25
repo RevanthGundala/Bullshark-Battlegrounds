@@ -99,7 +99,6 @@ export const accept_challenge = async (
         objectId = change.objectId; // will grab the second objectId
       }
     });
-    console.log(objectId);
     return objectId;
   } catch (error) {
     console.log(error);
@@ -283,7 +282,7 @@ export const attack = async (
       (event) => event.type === `${MODULE_ADDRESS}::card_game::GameOver`
     );
     if (events.length > 0) {
-      events.parsedJson?.winner === wallet.address
+      events[0].parsedJson?.winner === wallet.address
         ? window.alert("You won!")
         : window.alert("You lost!");
       router.push("/");
